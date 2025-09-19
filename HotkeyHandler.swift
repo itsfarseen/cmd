@@ -9,6 +9,9 @@ class HotkeyHandler: ObservableObject {
   private var handlerRef: EventHandlerRef?
   @Published private(set) var keyAppBindings: [String: String] = [:]
   @Published private(set) var isPaused: Bool = false
+  @Published var useCmdModifier: Bool = true
+  @Published var useOptionModifier: Bool = false
+  @Published var useShiftModifier: Bool = false
 
   init(appDelegate: AppDelegate) {
     self.appDelegate = appDelegate
@@ -92,6 +95,19 @@ class HotkeyHandler: ObservableObject {
     let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
     let dict = NSDictionary(dictionary: keyAppBindings)
     dict.write(toFile: filePath, atomically: true)
+    saveModifierSettings()
+  }
+
+  func saveModifierSettings() {
+    let settingsPath = NSHomeDirectory().appending("/.appswitch_settings")
+    let settings: [String: Bool] = [
+      "useCmdModifier": useCmdModifier,
+      "useOptionModifier": useOptionModifier,
+      "useShiftModifier": useShiftModifier,
+    ]
+    let dict = NSDictionary(dictionary: settings)
+    dict.write(toFile: settingsPath, atomically: true)
+    registerGlobalKeybindings()
   }
 
   func pause() {
@@ -110,6 +126,16 @@ class HotkeyHandler: ObservableObject {
     let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
     if let data = NSDictionary(contentsOfFile: filePath) as? [String: String] {
       keyAppBindings = data
+    }
+    loadModifierSettings()
+  }
+
+  private func loadModifierSettings() {
+    let settingsPath = NSHomeDirectory().appending("/.appswitch_settings")
+    if let data = NSDictionary(contentsOfFile: settingsPath) as? [String: Bool] {
+      useCmdModifier = data["useCmdModifier"] ?? true
+      useOptionModifier = data["useOptionModifier"] ?? false
+      useShiftModifier = data["useShiftModifier"] ?? false
     }
   }
 
@@ -134,6 +160,14 @@ class HotkeyHandler: ObservableObject {
       ("9", UInt32(kVK_ANSI_9)),
     ]
 
+    var modifierFlags: UInt32 = 0
+    if useCmdModifier { modifierFlags |= UInt32(cmdKey) }
+    if useOptionModifier { modifierFlags |= UInt32(optionKey) }
+    if useShiftModifier { modifierFlags |= UInt32(shiftKey) }
+
+    // If no modifiers are selected, default to Command
+    if modifierFlags == 0 { modifierFlags = UInt32(cmdKey) }
+
     for (keyChar, keyCode) in numberKeys {
       var hotKeyRef: EventHotKeyRef?
       let hotKeyID = EventHotKeyID(
@@ -141,7 +175,7 @@ class HotkeyHandler: ObservableObject {
 
       let status = RegisterEventHotKey(
         keyCode,
-        UInt32(cmdKey),
+        modifierFlags,
         hotKeyID,
         GetApplicationEventTarget(),
         0,

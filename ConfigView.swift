@@ -84,17 +84,28 @@ struct KeybindingRowView: View {
   let keybinding: KeybindingData
   let onAssign: () -> Void
   let onUnassign: () -> Void
+  let useCmdModifier: Bool
+  let useOptionModifier: Bool
+  let useShiftModifier: Bool
+
+  private var modifierText: String {
+    var text = ""
+    if useCmdModifier { text += "⌘" }
+    if useOptionModifier { text += "⌥" }
+    if useShiftModifier { text += "⇧" }
+    return text.isEmpty ? "⌘" : text
+  }
 
   var body: some View {
     HStack(spacing: 16) {
       // Keyboard shortcut display
       HStack(spacing: 2) {
-        Text("⌘")
+        Text(modifierText)
           .font(.system(size: 18, weight: .medium))
         Text(keybinding.displayKey)
           .font(.system(size: 18, weight: .medium))
       }
-      .frame(width: 60, alignment: .leading)
+      .frame(width: 80, alignment: .leading)
       .foregroundColor(.primary)
 
       // Assigned app or assign button
@@ -245,6 +256,10 @@ struct ConfigView: View {
   @State private var installedApps: [AvailableApp] = []
   @State private var showingAssignmentModal = false
   @State private var selectedKey: String?
+  @State private var selectedTab = 0
+  @State private var useCmdModifier = true
+  @State private var useOptionModifier = false
+  @State private var useShiftModifier = false
   let onDismiss: () -> Void
 
   var body: some View {
@@ -253,30 +268,20 @@ struct ConfigView: View {
         .font(.title)
         .fontWeight(.medium)
 
-      Text("Assign apps to keyboard shortcuts")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-
-      ScrollView {
-        VStack(spacing: 8) {
-          ForEach(keybindings) { keybinding in
-            KeybindingRowView(
-              keybinding: keybinding,
-              onAssign: {
-                selectedKey = keybinding.key
-                showingAssignmentModal = true
-              },
-              onUnassign: {
-                localKeyAppBindings.removeValue(forKey: keybinding.key)
-                updateKeybindings()
-              }
-            )
-          }
-        }
-        .padding(.horizontal)
+      // Tab picker
+      Picker("", selection: $selectedTab) {
+        Text("Apps").tag(0)
+        Text("Settings").tag(1)
       }
-      .frame(maxHeight: 400)
+      .pickerStyle(SegmentedPickerStyle())
+      .frame(width: 200)
+
+      // Tab content
+      if selectedTab == 0 {
+        appsTabContent
+      } else {
+        settingsTabContent
+      }
 
       HStack(spacing: 12) {
         Button("Cancel") {
@@ -291,6 +296,10 @@ struct ConfigView: View {
           for (key, appName) in localKeyAppBindings {
             hotkeyHandler.setKeyBinding(key: key, appName: appName)
           }
+          // Apply modifier settings
+          hotkeyHandler.useCmdModifier = useCmdModifier
+          hotkeyHandler.useOptionModifier = useOptionModifier
+          hotkeyHandler.useShiftModifier = useShiftModifier
           hotkeyHandler.saveKeybindings()
           onDismiss()
         }
@@ -332,8 +341,72 @@ struct ConfigView: View {
     }
   }
 
+  private var appsTabContent: some View {
+    VStack(spacing: 16) {
+      Text("Assign apps to keyboard shortcuts")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+
+      ScrollView {
+        VStack(spacing: 8) {
+          ForEach(keybindings) { keybinding in
+            KeybindingRowView(
+              keybinding: keybinding,
+              onAssign: {
+                selectedKey = keybinding.key
+                showingAssignmentModal = true
+              },
+              onUnassign: {
+                localKeyAppBindings.removeValue(forKey: keybinding.key)
+                updateKeybindings()
+              },
+              useCmdModifier: useCmdModifier,
+              useOptionModifier: useOptionModifier,
+              useShiftModifier: useShiftModifier
+            )
+          }
+        }
+        .padding(.horizontal)
+      }
+      .frame(maxHeight: 400)
+    }
+  }
+
+  private var settingsTabContent: some View {
+    VStack(spacing: 20) {
+      Text("Modifier Keys")
+        .font(.headline)
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+      VStack(spacing: 12) {
+        HStack {
+          Toggle("Command (⌘)", isOn: $useCmdModifier)
+          Spacer()
+        }
+
+        HStack {
+          Toggle("Option (⌥)", isOn: $useOptionModifier)
+          Spacer()
+        }
+
+        HStack {
+          Toggle("Shift (⇧)", isOn: $useShiftModifier)
+          Spacer()
+        }
+      }
+      .padding(.leading, 20)
+
+      Spacer()
+    }
+    .frame(maxHeight: 400)
+  }
+
   private func loadData() {
     localKeyAppBindings = hotkeyHandler.keyAppBindings
+    useCmdModifier = hotkeyHandler.useCmdModifier
+    useOptionModifier = hotkeyHandler.useOptionModifier
+    useShiftModifier = hotkeyHandler.useShiftModifier
     loadRunningApps()
     loadInstalledApps()
     updateKeybindings()
