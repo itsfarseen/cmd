@@ -5,6 +5,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var statusItem: NSStatusItem?
   private var configWindow: NSWindow?
   private(set) var hotkeyHandler: HotkeyHandler?
+  private let accessibilityManager = AccessibilityManager.shared
+  private let configManager = ConfigManager.shared
 
   override init() {
     super.init()
@@ -18,6 +20,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     setupMenuBar()
     hotkeyHandler = HotkeyHandler(appDelegate: self)
     hotkeyHandler?.updateGlobalKeybindings()
+
+    // Start accessibility features if enabled
+    updateAccessibilityFeatures()
+
+    // Listen for config changes to update accessibility features
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(configChanged),
+      name: NSNotification.Name("ConfigChanged"),
+      object: nil
+    )
   }
 
   private func setupMenuBar() {
@@ -142,6 +155,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc private func quitApp() {
     NSApplication.shared.terminate(nil)
+  }
+
+  @objc private func configChanged() {
+    updateAccessibilityFeatures()
+  }
+
+  private func updateAccessibilityFeatures() {
+    if configManager.enableLinuxWordMovementMapping {
+      if accessibilityManager.hasAccessibilityPermission() {
+        accessibilityManager.startKeyRemapping()
+      } else {
+        // Request permission and show alert
+        DispatchQueue.main.async {
+          self.requestAccessibilityPermission()
+        }
+      }
+    } else {
+      accessibilityManager.stopKeyRemapping()
+    }
+  }
+
+  private func requestAccessibilityPermission() {
+    let alert = NSAlert()
+    alert.messageText = "Accessibility Permission Required"
+    alert.informativeText =
+      "Linux word movement mapping requires accessibility permission to remap Ctrl+Left/Right to Option+Left/Right. Please grant permission in System Preferences > Security & Privacy > Privacy > Accessibility."
+    alert.addButton(withTitle: "Open System Preferences")
+    alert.addButton(withTitle: "Cancel")
+
+    let response = alert.runModal()
+    if response == .alertFirstButtonReturn {
+      _ = accessibilityManager.requestAccessibilityPermission()
+    }
   }
 
   private func updateMenuItems() {

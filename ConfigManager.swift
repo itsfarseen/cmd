@@ -155,6 +155,9 @@ class ConfigManager: ObservableObject {
   @Published var keyAppBindings: [String: String] = [:] {
     didSet { if !isLoading { saveConfiguration() } }
   }
+  @Published var enableLinuxWordMovementMapping: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
 
   private var isLoading = false
 
@@ -162,7 +165,7 @@ class ConfigManager: ObservableObject {
     loadConfigurationFromDisk()
   }
 
-  // MARK: - Public API
+  // MARK: - Private Implementation
 
   private func loadConfigurationFromDisk() {
     isLoading = true
@@ -181,6 +184,10 @@ class ConfigManager: ObservableObject {
 
     // Load key-app bindings
     keyAppBindings = rawConfig.getKeysWithPrefix("keybinding.")
+
+    // Load accessibility settings
+    enableLinuxWordMovementMapping = rawConfig.getBool(
+      key: "enable_linux_word_movement_mapping", default: false)
 
     isLoading = false
   }
@@ -208,8 +215,13 @@ class ConfigManager: ObservableObject {
       rawConfig.setValue(appName, forKey: "keybinding.\(key)")
     }
 
+    // Save accessibility settings
+    rawConfig.setBool(enableLinuxWordMovementMapping, forKey: "enable_linux_word_movement_mapping")
+
     rawConfig.save()
   }
+
+  // MARK: - Public API
 
   func setKeyAppBinding(key: String, appName: String?) {
     if let appName = appName {

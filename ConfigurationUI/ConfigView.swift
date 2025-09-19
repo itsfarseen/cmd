@@ -134,8 +134,10 @@ struct ConfigView: View {
           configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
           configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
           configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
+          enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
           onSettingsChanged: {
             hotkeyHandler.updateGlobalKeybindings()
+            NotificationCenter.default.post(name: NSNotification.Name("ConfigChanged"), object: nil)
           }
         )
       }
