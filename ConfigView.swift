@@ -119,11 +119,22 @@ struct KeybindingRowView: View {
           .buttonStyle(BorderlessButtonStyle())
           .foregroundColor(.red)
         }
+        .frame(height: 48)
       } else {
-        Button("Assign App...") {
-          onAssign()
+        HStack(spacing: 12) {
+          RoundedRectangle(cornerRadius: 4)
+            .fill(Color.clear)
+            .frame(width: 32, height: 32)
+
+          Spacer()
+
+          Button("Assign") {
+            onAssign()
+          }
+          .buttonStyle(BorderlessButtonStyle())
+          .foregroundColor(.blue)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 48)
       }
     }
     .padding(.vertical, 8)
