@@ -1,20 +1,5 @@
 import Foundation
-
-struct AppConfiguration {
-  // App switching modifier keys
-  var useCmdModifier: Bool = true
-  var useOptionModifier: Bool = false
-  var useShiftModifier: Bool = false
-
-  // Config hotkey settings
-  var configHotkeyKey: String = ","
-  var configHotkeyUseCmdModifier: Bool = true
-  var configHotkeyUseOptionModifier: Bool = false
-  var configHotkeyUseShiftModifier: Bool = false
-
-  // Key-app bindings
-  var keyAppBindings: [String: String] = [:]
-}
+import SwiftUI
 
 class RawConfig {
   private let configFileName = "config"
@@ -140,49 +125,77 @@ class RawConfig {
   }
 }
 
-class ConfigManager {
+class ConfigManager: ObservableObject {
   static let shared = ConfigManager()
 
   private let rawConfig = RawConfig()
 
-  private init() {}
+  // Published properties for real-time updates
+  @Published var useCmdModifier: Bool = true {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var useOptionModifier: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var useShiftModifier: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var configHotkeyKey: String = "," {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var configHotkeyUseCmdModifier: Bool = true {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var configHotkeyUseOptionModifier: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var configHotkeyUseShiftModifier: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var keyAppBindings: [String: String] = [:] {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+
+  private var isLoading = false
+
+  private init() {
+    loadConfigurationFromDisk()
+  }
 
   // MARK: - Public API
 
-  func loadConfiguration() -> AppConfiguration {
-    var appConfig = AppConfiguration()
+  private func loadConfigurationFromDisk() {
+    isLoading = true
 
     // Load modifier settings
-    appConfig.useCmdModifier = rawConfig.getBool(key: "use_cmd_modifier", default: true)
-    appConfig.useOptionModifier = rawConfig.getBool(key: "use_option_modifier", default: false)
-    appConfig.useShiftModifier = rawConfig.getBool(key: "use_shift_modifier", default: false)
+    useCmdModifier = rawConfig.getBool(key: "use_cmd_modifier", default: true)
+    useOptionModifier = rawConfig.getBool(key: "use_option_modifier", default: false)
+    useShiftModifier = rawConfig.getBool(key: "use_shift_modifier", default: false)
 
     // Load config hotkey settings
-    appConfig.configHotkeyKey = rawConfig.getString(key: "config_hotkey_key", default: ",")
-    appConfig.configHotkeyUseCmdModifier = rawConfig.getBool(
-      key: "config_hotkey_use_cmd", default: true)
-    appConfig.configHotkeyUseOptionModifier = rawConfig.getBool(
+    configHotkeyKey = rawConfig.getString(key: "config_hotkey_key", default: ",")
+    configHotkeyUseCmdModifier = rawConfig.getBool(key: "config_hotkey_use_cmd", default: true)
+    configHotkeyUseOptionModifier = rawConfig.getBool(
       key: "config_hotkey_use_option", default: false)
-    appConfig.configHotkeyUseShiftModifier = rawConfig.getBool(
-      key: "config_hotkey_use_shift", default: false)
+    configHotkeyUseShiftModifier = rawConfig.getBool(key: "config_hotkey_use_shift", default: false)
 
     // Load key-app bindings
-    appConfig.keyAppBindings = rawConfig.getKeysWithPrefix("keybinding.")
+    keyAppBindings = rawConfig.getKeysWithPrefix("keybinding.")
 
-    return appConfig
+    isLoading = false
   }
 
-  func saveConfiguration(_ appConfig: AppConfiguration) {
+  private func saveConfiguration() {
     // Save modifier settings
-    rawConfig.setBool(appConfig.useCmdModifier, forKey: "use_cmd_modifier")
-    rawConfig.setBool(appConfig.useOptionModifier, forKey: "use_option_modifier")
-    rawConfig.setBool(appConfig.useShiftModifier, forKey: "use_shift_modifier")
+    rawConfig.setBool(useCmdModifier, forKey: "use_cmd_modifier")
+    rawConfig.setBool(useOptionModifier, forKey: "use_option_modifier")
+    rawConfig.setBool(useShiftModifier, forKey: "use_shift_modifier")
 
     // Save config hotkey settings
-    rawConfig.setValue(appConfig.configHotkeyKey, forKey: "config_hotkey_key")
-    rawConfig.setBool(appConfig.configHotkeyUseCmdModifier, forKey: "config_hotkey_use_cmd")
-    rawConfig.setBool(appConfig.configHotkeyUseOptionModifier, forKey: "config_hotkey_use_option")
-    rawConfig.setBool(appConfig.configHotkeyUseShiftModifier, forKey: "config_hotkey_use_shift")
+    rawConfig.setValue(configHotkeyKey, forKey: "config_hotkey_key")
+    rawConfig.setBool(configHotkeyUseCmdModifier, forKey: "config_hotkey_use_cmd")
+    rawConfig.setBool(configHotkeyUseOptionModifier, forKey: "config_hotkey_use_option")
+    rawConfig.setBool(configHotkeyUseShiftModifier, forKey: "config_hotkey_use_shift")
 
     // Clear existing keybindings
     let existingBindings = rawConfig.getKeysWithPrefix("keybinding.")
@@ -191,7 +204,7 @@ class ConfigManager {
     }
 
     // Save new key-app bindings
-    for (key, appName) in appConfig.keyAppBindings {
+    for (key, appName) in keyAppBindings {
       rawConfig.setValue(appName, forKey: "keybinding.\(key)")
     }
 
@@ -200,11 +213,10 @@ class ConfigManager {
 
   func setKeyAppBinding(key: String, appName: String?) {
     if let appName = appName {
-      rawConfig.setValue(appName, forKey: "keybinding.\(key)")
+      keyAppBindings[key] = appName
     } else {
-      rawConfig.removeValue(forKey: "keybinding.\(key)")
+      keyAppBindings.removeValue(forKey: key)
     }
-    rawConfig.save()
   }
 
   func removeKeyAppBinding(key: String) {

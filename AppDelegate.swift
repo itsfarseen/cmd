@@ -17,7 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     setupMenuBar()
     hotkeyHandler = HotkeyHandler(appDelegate: self)
-    hotkeyHandler?.registerGlobalKeybindings()
+    hotkeyHandler?.updateGlobalKeybindings()
   }
 
   private func setupMenuBar() {

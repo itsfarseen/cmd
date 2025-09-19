@@ -7,20 +7,13 @@ class HotkeyHandler: ObservableObject {
   private var registeredHotkeys: [EventHotKeyRef] = []
   private weak var appDelegate: AppDelegate?
   private var handlerRef: EventHandlerRef?
-  @Published private(set) var keyAppBindings: [String: String] = [:]
   @Published private(set) var isPaused: Bool = false
-  @Published var useCmdModifier: Bool = true
-  @Published var useOptionModifier: Bool = false
-  @Published var useShiftModifier: Bool = false
-  @Published var configHotkeyKey: String = ","
-  @Published var configHotkeyUseCmdModifier: Bool = true
-  @Published var configHotkeyUseOptionModifier: Bool = false
-  @Published var configHotkeyUseShiftModifier: Bool = false
+  private let configManager = ConfigManager.shared
 
   init(appDelegate: AppDelegate) {
     self.appDelegate = appDelegate
-    loadKeybindings()
     installEventHandler()
+    updateGlobalKeybindings()
   }
 
   deinit {
@@ -79,7 +72,7 @@ class HotkeyHandler: ObservableObject {
     let targetKey = String(keyNumber)
 
     if let delegate = appDelegate,
-      let appName = keyAppBindings[targetKey]
+      let appName = configManager.keyAppBindings[targetKey]
     {
       _ = delegate.switchToApp(named: appName)
     }
@@ -87,43 +80,12 @@ class HotkeyHandler: ObservableObject {
     return noErr
   }
 
-  func registerGlobalKeybindings() {
+  func updateGlobalKeybindings() {
     clearGlobalKeybindings()
     registerAllNumberKeys()
-    if !configHotkeyKey.isEmpty {
+    if !configManager.configHotkeyKey.isEmpty {
       registerConfigHotkey()
     }
-  }
-
-  func setKeyBinding(key: String, appName: String?) {
-    if let appName = appName, key.count == 1 && key.first?.isNumber == true {
-      keyAppBindings[key] = appName
-    } else {
-      keyAppBindings.removeValue(forKey: key)
-    }
-  }
-
-  func removeKeyBinding(key: String) {
-    keyAppBindings.removeValue(forKey: key)
-  }
-
-  func saveKeybindings() {
-    saveConfiguration()
-  }
-
-  func saveConfiguration() {
-    let config = AppConfiguration(
-      useCmdModifier: useCmdModifier,
-      useOptionModifier: useOptionModifier,
-      useShiftModifier: useShiftModifier,
-      configHotkeyKey: configHotkeyKey,
-      configHotkeyUseCmdModifier: configHotkeyUseCmdModifier,
-      configHotkeyUseOptionModifier: configHotkeyUseOptionModifier,
-      configHotkeyUseShiftModifier: configHotkeyUseShiftModifier,
-      keyAppBindings: keyAppBindings
-    )
-    ConfigManager.shared.saveConfiguration(config)
-    registerGlobalKeybindings()
   }
 
   func pause() {
@@ -136,23 +98,6 @@ class HotkeyHandler: ObservableObject {
 
   func togglePause() {
     isPaused.toggle()
-  }
-
-  private func loadKeybindings() {
-    loadConfiguration()
-  }
-
-  private func loadConfiguration() {
-    let config = ConfigManager.shared.loadConfiguration()
-
-    keyAppBindings = config.keyAppBindings
-    useCmdModifier = config.useCmdModifier
-    useOptionModifier = config.useOptionModifier
-    useShiftModifier = config.useShiftModifier
-    configHotkeyKey = config.configHotkeyKey
-    configHotkeyUseCmdModifier = config.configHotkeyUseCmdModifier
-    configHotkeyUseOptionModifier = config.configHotkeyUseOptionModifier
-    configHotkeyUseShiftModifier = config.configHotkeyUseShiftModifier
   }
 
   private func clearGlobalKeybindings() {
@@ -177,9 +122,9 @@ class HotkeyHandler: ObservableObject {
     ]
 
     var modifierFlags: UInt32 = 0
-    if useCmdModifier { modifierFlags |= UInt32(cmdKey) }
-    if useOptionModifier { modifierFlags |= UInt32(optionKey) }
-    if useShiftModifier { modifierFlags |= UInt32(shiftKey) }
+    if configManager.useCmdModifier { modifierFlags |= UInt32(cmdKey) }
+    if configManager.useOptionModifier { modifierFlags |= UInt32(optionKey) }
+    if configManager.useShiftModifier { modifierFlags |= UInt32(shiftKey) }
 
     // If no modifiers are selected, default to Command
     if modifierFlags == 0 { modifierFlags = UInt32(cmdKey) }
@@ -205,13 +150,13 @@ class HotkeyHandler: ObservableObject {
   }
 
   private func registerConfigHotkey() {
-    let keyCode = keyCodeForCharacter(configHotkeyKey)
+    let keyCode = keyCodeForCharacter(configManager.configHotkeyKey)
     guard keyCode != 0 else { return }
 
     var configModifierFlags: UInt32 = 0
-    if configHotkeyUseCmdModifier { configModifierFlags |= UInt32(cmdKey) }
-    if configHotkeyUseOptionModifier { configModifierFlags |= UInt32(optionKey) }
-    if configHotkeyUseShiftModifier { configModifierFlags |= UInt32(shiftKey) }
+    if configManager.configHotkeyUseCmdModifier { configModifierFlags |= UInt32(cmdKey) }
+    if configManager.configHotkeyUseOptionModifier { configModifierFlags |= UInt32(optionKey) }
+    if configManager.configHotkeyUseShiftModifier { configModifierFlags |= UInt32(shiftKey) }
 
     // If no modifiers are selected, default to Command
     if configModifierFlags == 0 { configModifierFlags = UInt32(cmdKey) }

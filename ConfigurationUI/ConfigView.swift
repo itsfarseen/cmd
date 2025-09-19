@@ -85,6 +85,7 @@ struct KeybindingRowView: View {
 
 struct ConfigView: View {
   @ObservedObject var hotkeyHandler: HotkeyHandler
+  @ObservedObject private var configManager = ConfigManager.shared
   @State private var keybindings: [KeybindingData] = []
   @State private var runningApps: [AvailableApp] = []
   @State private var installedApps: [AvailableApp] = []
@@ -111,30 +112,30 @@ struct ConfigView: View {
       if selectedTab == 0 {
         AppsTabView(
           keybindings: keybindings,
-          useCmdModifier: hotkeyHandler.useCmdModifier,
-          useOptionModifier: hotkeyHandler.useOptionModifier,
-          useShiftModifier: hotkeyHandler.useShiftModifier,
+          useCmdModifier: configManager.useCmdModifier,
+          useOptionModifier: configManager.useOptionModifier,
+          useShiftModifier: configManager.useShiftModifier,
           onAssign: { key in
             selectedKey = key
             showingAssignmentModal = true
           },
           onUnassign: { key in
-            hotkeyHandler.removeKeyBinding(key: key)
-            hotkeyHandler.saveConfiguration()
-            updateKeybindings()
+            configManager.removeKeyAppBinding(key: key)
+            hotkeyHandler.updateGlobalKeybindings()
+            refreshKeybindingDisplay()
           }
         )
       } else {
         SettingsTabView(
-          useCmdModifier: $hotkeyHandler.useCmdModifier,
-          useOptionModifier: $hotkeyHandler.useOptionModifier,
-          useShiftModifier: $hotkeyHandler.useShiftModifier,
-          configHotkeyKey: $hotkeyHandler.configHotkeyKey,
-          configHotkeyUseCmdModifier: $hotkeyHandler.configHotkeyUseCmdModifier,
-          configHotkeyUseOptionModifier: $hotkeyHandler.configHotkeyUseOptionModifier,
-          configHotkeyUseShiftModifier: $hotkeyHandler.configHotkeyUseShiftModifier,
+          useCmdModifier: $configManager.useCmdModifier,
+          useOptionModifier: $configManager.useOptionModifier,
+          useShiftModifier: $configManager.useShiftModifier,
+          configHotkeyKey: $configManager.configHotkeyKey,
+          configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
+          configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
+          configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
           onSettingsChanged: {
-            hotkeyHandler.saveConfiguration()
+            hotkeyHandler.updateGlobalKeybindings()
           }
         )
       }
@@ -159,9 +160,9 @@ struct ConfigView: View {
         installedApps: installedApps,
         onSelectApp: { appName in
           if let key = selectedKey {
-            hotkeyHandler.setKeyBinding(key: key, appName: appName)
-            hotkeyHandler.saveConfiguration()
-            updateKeybindings()
+            configManager.setKeyAppBinding(key: key, appName: appName)
+            hotkeyHandler.updateGlobalKeybindings()
+            refreshKeybindingDisplay()
           }
           showingAssignmentModal = false
           selectedKey = nil
@@ -183,10 +184,10 @@ struct ConfigView: View {
   private func loadData() {
     loadRunningApps()
     loadInstalledApps()
-    updateKeybindings()
+    refreshKeybindingDisplay()
   }
 
-  private func updateKeybindings() {
+  private func refreshKeybindingDisplay() {
     let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
 
     keybindings = keys.map { key in
@@ -233,7 +234,7 @@ struct ConfigView: View {
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
-    return hotkeyHandler.keyAppBindings[key]
+    return configManager.keyAppBindings[key]
   }
 
   private func getAppIcon(for appName: String) -> NSImage? {
