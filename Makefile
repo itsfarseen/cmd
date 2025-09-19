@@ -1,19 +1,13 @@
-SWIFT = swiftc
-FRAMEWORKS = -framework Cocoa -framework Carbon -framework ApplicationServices -framework CoreFoundation
 TARGET = AppSwitcher
-SOURCE = main.swift AppInfo.swift HotkeyHandler.swift AppList.swift ConfigWindow.swift AppDelegate.swift
-BUILD_DIR = build
+BUILD_DIR = .build/debug
 
 all: $(BUILD_DIR)/$(TARGET)
 
 run: $(BUILD_DIR)/$(TARGET)
-	$(BUILD_DIR)/$(TARGET)
+	swift run
 
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
-$(BUILD_DIR)/$(TARGET): $(SOURCE) | $(BUILD_DIR)
-	$(SWIFT) -g $(FRAMEWORKS) -o $(BUILD_DIR)/$(TARGET) $(SOURCE)
+$(BUILD_DIR)/$(TARGET):
+	swift build
 
 clean:
 	rm -rf $(BUILD_DIR)
