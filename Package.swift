@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
   name: "AppSwitcher",
   platforms: [
-    .macOS(.v10_15)
+    .macOS(.v11)
   ],
   targets: [
     .executableTarget(

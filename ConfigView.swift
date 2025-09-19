@@ -14,7 +14,59 @@ struct AvailableApp: Identifiable {
   let icon: NSImage?
 }
 
-@available(macOS 10.15, *)
+class AppDiscovery {
+  private let applicationPaths = [
+    "/Applications",
+    "/System/Applications",
+    "\(NSHomeDirectory())/Applications",
+  ]
+
+  private let workspace = NSWorkspace.shared
+  private var appNameToAppMapping: [String: AvailableApp] = [:]
+
+  func refresh() {
+    var apps: [String: AvailableApp] = [:]
+
+    for appDir in applicationPaths {
+      guard
+        let enumerator = FileManager.default.enumerator(
+          at: URL(fileURLWithPath: appDir),
+          includingPropertiesForKeys: [.isApplicationKey],
+          options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        )
+      else { continue }
+
+      for case let fileURL as URL in enumerator {
+        guard fileURL.pathExtension == "app" else { continue }
+
+        let appName = fileURL.deletingPathExtension().lastPathComponent
+        let appIcon = workspace.icon(forFile: fileURL.path)
+        appIcon.size = NSSize(width: 32, height: 32)
+
+        apps[appName] = AvailableApp(name: appName, icon: appIcon)
+      }
+    }
+
+    appNameToAppMapping = apps
+  }
+
+  func getInstalledApps() -> [AvailableApp] {
+    if appNameToAppMapping.isEmpty {
+      refresh()
+    }
+
+    return Array(appNameToAppMapping.values).sorted { $0.name < $1.name }
+  }
+
+  func findAppIcon(for appName: String) -> NSImage? {
+    if appNameToAppMapping.isEmpty {
+      refresh()
+    }
+
+    return appNameToAppMapping[appName]?.icon
+  }
+}
+
 struct KeybindingRowView: View {
   let keybinding: KeybindingData
   let onAssign: () -> Void
@@ -68,14 +120,16 @@ struct KeybindingRowView: View {
   }
 }
 
-@available(macOS 10.15, *)
 struct AppAssignmentModal: View {
   let runningApps: [AvailableApp]
   let installedApps: [AvailableApp]
   let onSelectApp: (String) -> Void
   let onCancel: () -> Void
+  let onRefreshRunning: () -> Void
+  let onRefreshInstalled: () -> Void
 
   @State private var selectedTab = 0
+  @State private var isRefreshing = false
 
   var body: some View {
     VStack(spacing: 16) {
@@ -89,6 +143,33 @@ struct AppAssignmentModal: View {
       }
       .pickerStyle(SegmentedPickerStyle())
       .frame(width: 200)
+
+      // Refresh button
+      HStack {
+        Spacer()
+        Button(action: {
+          isRefreshing = true
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if selectedTab == 0 {
+              onRefreshRunning()
+            } else {
+              onRefreshInstalled()
+            }
+            isRefreshing = false
+          }
+        }) {
+          HStack(spacing: 4) {
+            Image(systemName: "arrow.clockwise")
+              .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+              .animation(.easeInOut(duration: 0.5), value: isRefreshing)
+            Text("Refresh")
+          }
+        }
+        .buttonStyle(BorderlessButtonStyle())
+        .foregroundColor(isRefreshing ? .gray : .blue)
+        .disabled(isRefreshing)
+      }
+      .padding(.horizontal)
 
       ScrollView {
         VStack(spacing: 4) {
@@ -132,7 +213,6 @@ struct AppAssignmentModal: View {
   }
 }
 
-@available(macOS 10.15, *)
 struct ConfigView: View {
   @ObservedObject var hotkeyHandler: HotkeyHandler
   @State private var keybindings: [KeybindingData] = []
@@ -141,6 +221,8 @@ struct ConfigView: View {
   @State private var showingAssignmentModal = false
   @State private var selectedKey: String?
   let onDismiss: () -> Void
+
+  private let appDiscovery = AppDiscovery()
 
   var body: some View {
     VStack(spacing: 16) {
@@ -209,6 +291,12 @@ struct ConfigView: View {
         onCancel: {
           showingAssignmentModal = false
           selectedKey = nil
+        },
+        onRefreshRunning: {
+          loadRunningApps()
+        },
+        onRefreshInstalled: {
+          loadInstalledApps()
         }
       )
     }
@@ -262,36 +350,8 @@ struct ConfigView: View {
   }
 
   private func loadInstalledApps() {
-    let workspace = NSWorkspace.shared
-    let applicationURLs = [
-      "/Applications",
-      "/System/Applications",
-      "\(NSHomeDirectory())/Applications",
-    ]
-
-    var apps: [AvailableApp] = []
-
-    for appDir in applicationURLs {
-      guard
-        let enumerator = FileManager.default.enumerator(
-          at: URL(fileURLWithPath: appDir),
-          includingPropertiesForKeys: [.isApplicationKey],
-          options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
-        )
-      else { continue }
-
-      for case let fileURL as URL in enumerator {
-        guard fileURL.pathExtension == "app" else { continue }
-
-        let appName = fileURL.deletingPathExtension().lastPathComponent
-        let appIcon = workspace.icon(forFile: fileURL.path)
-        appIcon.size = NSSize(width: 32, height: 32)
-
-        apps.append(AvailableApp(name: appName, icon: appIcon))
-      }
-    }
-
-    installedApps = apps.sorted { $0.name < $1.name }
+    appDiscovery.refresh()
+    installedApps = appDiscovery.getInstalledApps()
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
@@ -302,6 +362,7 @@ struct ConfigView: View {
     let workspace = NSWorkspace.shared
     let runningApps = workspace.runningApplications
 
+    // First, try to find the app in running applications
     for app in runningApps {
       if app.localizedName == appName {
         var appIcon = app.icon
@@ -312,7 +373,9 @@ struct ConfigView: View {
         return appIcon
       }
     }
-    return nil
+
+    // If not found in running apps, search installed apps using AppDiscovery
+    return appDiscovery.findAppIcon(for: appName)
   }
 
 }
