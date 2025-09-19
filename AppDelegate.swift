@@ -102,7 +102,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     for app in apps {
       if app.localizedName == appName {
-        return app.activate(options: .activateAllWindows)
+        // Try to open the app using NSWorkspace which can restore minimized windows
+        if let bundleURL = app.bundleURL {
+          workspace.openApplication(
+            at: bundleURL, configuration: NSWorkspace.OpenConfiguration()
+          ) { _, _ in }
+          return true
+        }
       }
     }
 
