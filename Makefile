@@ -24,4 +24,4 @@ format:
 		echo "swift-format not found. Install with: brew install swift-format"; \
 	fi
 
-.PHONY: all clean install format
+.PHONY: all clean install format $(BUILD_DIR)/$(TARGET)
