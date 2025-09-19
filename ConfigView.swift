@@ -70,18 +70,30 @@ struct KeybindingRowView: View {
 
 @available(macOS 10.15, *)
 struct AppAssignmentModal: View {
-  let availableApps: [AvailableApp]
+  let runningApps: [AvailableApp]
+  let installedApps: [AvailableApp]
   let onSelectApp: (String) -> Void
   let onCancel: () -> Void
+
+  @State private var selectedTab = 0
 
   var body: some View {
     VStack(spacing: 16) {
       Text("Select App")
         .font(.headline)
 
+      // Tab picker
+      Picker("", selection: $selectedTab) {
+        Text("Running").tag(0)
+        Text("Installed").tag(1)
+      }
+      .pickerStyle(SegmentedPickerStyle())
+      .frame(width: 200)
+
       ScrollView {
         VStack(spacing: 4) {
-          ForEach(availableApps) { app in
+          let appsToShow = selectedTab == 0 ? runningApps : installedApps
+          ForEach(appsToShow) { app in
             Button(action: {
               onSelectApp(app.name)
             }) {
@@ -116,7 +128,7 @@ struct AppAssignmentModal: View {
       }
     }
     .padding()
-    .frame(width: 400)
+    .frame(width: 450, height: 450)
   }
 }
 
@@ -124,7 +136,8 @@ struct AppAssignmentModal: View {
 struct ConfigView: View {
   @ObservedObject var hotkeyHandler: HotkeyHandler
   @State private var keybindings: [KeybindingData] = []
-  @State private var availableApps: [AvailableApp] = []
+  @State private var runningApps: [AvailableApp] = []
+  @State private var installedApps: [AvailableApp] = []
   @State private var showingAssignmentModal = false
   @State private var selectedKey: String?
   let onDismiss: () -> Void
@@ -183,7 +196,8 @@ struct ConfigView: View {
     }
     .sheet(isPresented: $showingAssignmentModal) {
       AppAssignmentModal(
-        availableApps: availableApps,
+        runningApps: runningApps,
+        installedApps: installedApps,
         onSelectApp: { appName in
           if let key = selectedKey {
             hotkeyHandler.setKeyBinding(key: key, appName: appName)
@@ -201,7 +215,8 @@ struct ConfigView: View {
   }
 
   private func loadData() {
-    loadAvailableApps()
+    loadRunningApps()
+    loadInstalledApps()
     updateKeybindings()
   }
 
@@ -225,11 +240,11 @@ struct ConfigView: View {
     }
   }
 
-  private func loadAvailableApps() {
+  private func loadRunningApps() {
     let workspace = NSWorkspace.shared
-    let runningApps = workspace.runningApplications
+    let runningApplications = workspace.runningApplications
 
-    availableApps = runningApps.compactMap { app in
+    runningApps = runningApplications.compactMap { app in
       guard app.activationPolicy == .regular else { return nil }
 
       let appName = app.localizedName ?? "Unknown App"
@@ -244,6 +259,39 @@ struct ConfigView: View {
       return AvailableApp(name: appName, icon: appIcon)
     }
     .sorted { $0.name < $1.name }
+  }
+
+  private func loadInstalledApps() {
+    let workspace = NSWorkspace.shared
+    let applicationURLs = [
+      "/Applications",
+      "/System/Applications",
+      "\(NSHomeDirectory())/Applications",
+    ]
+
+    var apps: [AvailableApp] = []
+
+    for appDir in applicationURLs {
+      guard
+        let enumerator = FileManager.default.enumerator(
+          at: URL(fileURLWithPath: appDir),
+          includingPropertiesForKeys: [.isApplicationKey],
+          options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        )
+      else { continue }
+
+      for case let fileURL as URL in enumerator {
+        guard fileURL.pathExtension == "app" else { continue }
+
+        let appName = fileURL.deletingPathExtension().lastPathComponent
+        let appIcon = workspace.icon(forFile: fileURL.path)
+        appIcon.size = NSSize(width: 32, height: 32)
+
+        apps.append(AvailableApp(name: appName, icon: appIcon))
+      }
+    }
+
+    installedApps = apps.sorted { $0.name < $1.name }
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
