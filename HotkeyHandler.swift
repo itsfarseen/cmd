@@ -1,12 +1,13 @@
 import ApplicationServices
 import Carbon
 import Cocoa
+import SwiftUI
 
-class HotkeyHandler {
+class HotkeyHandler: ObservableObject {
     private var registeredHotkeys: [EventHotKeyRef] = []
     private weak var appDelegate: AppDelegate?
     private var handlerRef: EventHandlerRef?
-    private(set) var appKeybindings: [String: String] = [:]
+    @Published private(set) var appKeybindings: [String: String] = [:]
 
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate

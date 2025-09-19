@@ -1,8 +1,9 @@
 import Cocoa
+import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
-    private var configWindowHandler: ConfigWindow!
+    private var configWindow: NSWindow?
     private(set) var hotkeyHandler: HotkeyHandler?
 
     override init() {
@@ -17,7 +18,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenuBar()
         hotkeyHandler = HotkeyHandler(appDelegate: self)
         hotkeyHandler?.registerGlobalKeybindings()
-        configWindowHandler = ConfigWindow(hotkeyHandler: hotkeyHandler!)
     }
 
     private func setupMenuBar() {
@@ -28,7 +28,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showConfigWindow() {
-        configWindowHandler.openWindow()
+        if configWindow != nil {
+            configWindow?.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        guard let hotkeyHandler = hotkeyHandler else { return }
+
+        let contentView = ConfigView(hotkeyHandler: hotkeyHandler) {
+            self.configWindow?.close()
+        }
+        let hostingController = NSHostingController(rootView: contentView)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "App Switcher Configuration"
+        window.contentViewController = hostingController
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        configWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { _ in
+            self.configWindow = nil
+        }
     }
 
     func switchToApp(named appName: String) -> Bool {
