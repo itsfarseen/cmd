@@ -62,10 +62,10 @@ class HotkeyHandler: ObservableObject {
     let keyNumber = Int(hotkeyID.id - 1000)
     let targetKey = String(keyNumber)
 
-    if let delegate = appDelegate {
-      if let appName = keyAppBindings[targetKey] {
-        _ = delegate.switchToApp(named: appName)
-      }
+    if let delegate = appDelegate,
+      let appName = keyAppBindings[targetKey]
+    {
+      _ = delegate.switchToApp(named: appName)
     }
 
     return noErr
@@ -73,12 +73,7 @@ class HotkeyHandler: ObservableObject {
 
   func registerGlobalKeybindings() {
     clearGlobalKeybindings()
-
-    for (key, appName) in keyAppBindings {
-      if key.count == 1, let keyChar = key.first, keyChar.isNumber {
-        registerKeybinding(for: keyChar, appName: appName)
-      }
-    }
+    registerAllNumberKeys()
   }
 
   func setKeyBinding(key: String, appName: String?) {
@@ -97,7 +92,6 @@ class HotkeyHandler: ObservableObject {
     let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
     let dict = NSDictionary(dictionary: keyAppBindings)
     dict.write(toFile: filePath, atomically: true)
-    registerGlobalKeybindings()
   }
 
   func pause() {
@@ -126,38 +120,37 @@ class HotkeyHandler: ObservableObject {
     registeredHotkeys.removeAll()
   }
 
-  private func registerKeybinding(for keyChar: Character, appName: String) {
-    let keyCode: UInt32
+  private func registerAllNumberKeys() {
+    let numberKeys: [(Character, UInt32)] = [
+      ("0", UInt32(kVK_ANSI_0)),
+      ("1", UInt32(kVK_ANSI_1)),
+      ("2", UInt32(kVK_ANSI_2)),
+      ("3", UInt32(kVK_ANSI_3)),
+      ("4", UInt32(kVK_ANSI_4)),
+      ("5", UInt32(kVK_ANSI_5)),
+      ("6", UInt32(kVK_ANSI_6)),
+      ("7", UInt32(kVK_ANSI_7)),
+      ("8", UInt32(kVK_ANSI_8)),
+      ("9", UInt32(kVK_ANSI_9)),
+    ]
 
-    switch keyChar {
-    case "0": keyCode = UInt32(kVK_ANSI_0)
-    case "1": keyCode = UInt32(kVK_ANSI_1)
-    case "2": keyCode = UInt32(kVK_ANSI_2)
-    case "3": keyCode = UInt32(kVK_ANSI_3)
-    case "4": keyCode = UInt32(kVK_ANSI_4)
-    case "5": keyCode = UInt32(kVK_ANSI_5)
-    case "6": keyCode = UInt32(kVK_ANSI_6)
-    case "7": keyCode = UInt32(kVK_ANSI_7)
-    case "8": keyCode = UInt32(kVK_ANSI_8)
-    case "9": keyCode = UInt32(kVK_ANSI_9)
-    default: return
-    }
+    for (keyChar, keyCode) in numberKeys {
+      var hotKeyRef: EventHotKeyRef?
+      let hotKeyID = EventHotKeyID(
+        signature: fourCharCodeFrom("SWCH"), id: UInt32(1000 + keyChar.wholeNumberValue!))
 
-    var hotKeyRef: EventHotKeyRef?
-    let hotKeyID = EventHotKeyID(
-      signature: fourCharCodeFrom("SWCH"), id: UInt32(1000 + keyChar.wholeNumberValue!))
+      let status = RegisterEventHotKey(
+        keyCode,
+        UInt32(cmdKey),
+        hotKeyID,
+        GetApplicationEventTarget(),
+        0,
+        &hotKeyRef
+      )
 
-    let status = RegisterEventHotKey(
-      keyCode,
-      UInt32(cmdKey),
-      hotKeyID,
-      GetApplicationEventTarget(),
-      0,
-      &hotKeyRef
-    )
-
-    if status == noErr, let hotkey = hotKeyRef {
-      registeredHotkeys.append(hotkey)
+      if status == noErr, let hotkey = hotKeyRef {
+        registeredHotkeys.append(hotkey)
+      }
     }
   }
 }
