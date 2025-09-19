@@ -23,8 +23,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem?.button?.title = "⌘"
-        statusItem?.button?.target = self
-        statusItem?.button?.action = #selector(showConfigWindow)
+
+        let menu = NSMenu()
+
+        let pauseResumeItem = NSMenuItem(
+            title: "Pause",
+            action: #selector(togglePauseResume),
+            keyEquivalent: ""
+        )
+        pauseResumeItem.target = self
+        menu.addItem(pauseResumeItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let configureItem = NSMenuItem(
+            title: "Configure...",
+            action: #selector(showConfigWindow),
+            keyEquivalent: ""
+        )
+        configureItem.target = self
+        menu.addItem(configureItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let quitItem = NSMenuItem(
+            title: "Quit",
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        )
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        statusItem?.menu = menu
+
+        updateMenuItems()
     }
 
     @objc private func showConfigWindow() {
@@ -80,4 +112,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
     }
+
+    @objc private func togglePauseResume() {
+        hotkeyHandler?.togglePause()
+        updateMenuItems()
+    }
+
+    @objc private func quitApp() {
+        NSApplication.shared.terminate(nil)
+    }
+
+    private func updateMenuItems() {
+        guard let menu = statusItem?.menu,
+            let pauseResumeItem = menu.items.first,
+            let hotkeyHandler = hotkeyHandler
+        else { return }
+
+        pauseResumeItem.title = hotkeyHandler.isPaused ? "Resume" : "Pause"
+        statusItem?.button?.title = hotkeyHandler.isPaused ? "⏸" : "⌘"
+    }
 }
+

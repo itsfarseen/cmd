@@ -8,6 +8,7 @@ class HotkeyHandler: ObservableObject {
     private weak var appDelegate: AppDelegate?
     private var handlerRef: EventHandlerRef?
     @Published private(set) var appKeybindings: [String: String] = [:]
+    @Published private(set) var isPaused: Bool = false
 
     init(appDelegate: AppDelegate) {
         self.appDelegate = appDelegate
@@ -43,6 +44,8 @@ class HotkeyHandler: ObservableObject {
     }
 
     private func handleHotkey(nextHandler: EventHandlerCallRef?, event: EventRef?) -> OSStatus {
+        guard !isPaused else { return noErr }
+
         var hotkeyID = EventHotKeyID()
         let status = GetEventParameter(
             event,
@@ -94,6 +97,18 @@ class HotkeyHandler: ObservableObject {
         let dict = NSDictionary(dictionary: appKeybindings)
         dict.write(toFile: filePath, atomically: true)
         registerGlobalKeybindings()
+    }
+
+    func pause() {
+        isPaused = true
+    }
+
+    func resume() {
+        isPaused = false
+    }
+
+    func togglePause() {
+        isPaused.toggle()
     }
 
     private func loadKeybindings() {
