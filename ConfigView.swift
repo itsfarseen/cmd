@@ -1,60 +1,132 @@
 import SwiftUI
 
-@available(macOS 10.15, *)
-struct AppRowView: View {
-  let app: AppData
-  @State private var keyBinding: String
-  let onKeyBindingChange: (String, String) -> Void
+struct KeybindingData: Identifiable {
+  let id = UUID()
+  let key: String
+  let displayKey: String
+  let assignedAppName: String?
+  let assignedAppIcon: NSImage?
+}
 
-  init(app: AppData, onKeyBindingChange: @escaping (String, String) -> Void) {
-    self.app = app
-    self.onKeyBindingChange = onKeyBindingChange
-    self._keyBinding = State(initialValue: app.keyBinding)
-  }
+struct AvailableApp: Identifiable {
+  let id = UUID()
+  let name: String
+  let icon: NSImage?
+}
+
+@available(macOS 10.15, *)
+struct KeybindingRowView: View {
+  let keybinding: KeybindingData
+  let onAssign: () -> Void
+  let onUnassign: () -> Void
 
   var body: some View {
-    HStack(spacing: 12) {
-      if let icon = app.icon {
-        Image(nsImage: icon)
-          .resizable()
-          .frame(width: 32, height: 32)
-      } else {
-        RoundedRectangle(cornerRadius: 4)
-          .fill(Color.gray.opacity(0.3))
-          .frame(width: 32, height: 32)
+    HStack(spacing: 16) {
+      // Keyboard shortcut display
+      HStack(spacing: 2) {
+        Text("⌘")
+          .font(.system(size: 18, weight: .medium))
+        Text(keybinding.displayKey)
+          .font(.system(size: 18, weight: .medium))
       }
+      .frame(width: 60, alignment: .leading)
+      .foregroundColor(.primary)
 
-      Text(app.name)
-        .frame(maxWidth: .infinity, alignment: .leading)
-
-      TextField("0-9", text: $keyBinding)
-        .textFieldStyle(RoundedBorderTextFieldStyle())
-        .frame(width: 50)
-        .onReceive(NotificationCenter.default.publisher(for: NSControl.textDidChangeNotification)) {
-          _ in
-          let filtered = String(keyBinding.filter { $0.isNumber }.prefix(1))
-          if filtered != keyBinding {
-            keyBinding = filtered
+      // Assigned app or assign button
+      if let appName = keybinding.assignedAppName {
+        HStack(spacing: 12) {
+          if let icon = keybinding.assignedAppIcon {
+            Image(nsImage: icon)
+              .resizable()
+              .frame(width: 32, height: 32)
+          } else {
+            RoundedRectangle(cornerRadius: 4)
+              .fill(Color.gray.opacity(0.3))
+              .frame(width: 32, height: 32)
           }
-          onKeyBindingChange(app.name, filtered)
+
+          Text(appName)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+          Button("Remove") {
+            onUnassign()
+          }
+          .buttonStyle(BorderlessButtonStyle())
+          .foregroundColor(.red)
         }
+      } else {
+        Button("Assign App...") {
+          onAssign()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, 8)
+    .padding(.horizontal, 12)
+    .background(Color(NSColor.controlBackgroundColor))
+    .cornerRadius(8)
   }
 }
 
-struct AppData: Identifiable {
-  let id = UUID()
-  let name: String
-  let pid: pid_t
-  let icon: NSImage?
-  let keyBinding: String
+@available(macOS 10.15, *)
+struct AppAssignmentModal: View {
+  let availableApps: [AvailableApp]
+  let onSelectApp: (String) -> Void
+  let onCancel: () -> Void
+
+  var body: some View {
+    VStack(spacing: 16) {
+      Text("Select App")
+        .font(.headline)
+
+      ScrollView {
+        VStack(spacing: 4) {
+          ForEach(availableApps) { app in
+            Button(action: {
+              onSelectApp(app.name)
+            }) {
+              HStack(spacing: 12) {
+                if let icon = app.icon {
+                  Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 32, height: 32)
+                } else {
+                  RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                }
+
+                Text(app.name)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .foregroundColor(.primary)
+              }
+              .padding(.vertical, 8)
+              .padding(.horizontal, 12)
+              .background(Color(NSColor.controlBackgroundColor))
+              .cornerRadius(6)
+            }
+            .buttonStyle(PlainButtonStyle())
+          }
+        }
+      }
+      .frame(maxHeight: 300)
+
+      Button("Cancel") {
+        onCancel()
+      }
+    }
+    .padding()
+    .frame(width: 400)
+  }
 }
 
 @available(macOS 10.15, *)
 struct ConfigView: View {
   @ObservedObject var hotkeyHandler: HotkeyHandler
-  @State private var apps: [AppData] = []
+  @State private var keybindings: [KeybindingData] = []
+  @State private var availableApps: [AvailableApp] = []
+  @State private var showingAssignmentModal = false
+  @State private var selectedKey: String?
   let onDismiss: () -> Void
 
   var body: some View {
@@ -63,20 +135,28 @@ struct ConfigView: View {
         .font(.title)
         .fontWeight(.medium)
 
-      Text("Assign number keys (0-9) to quickly switch between apps using Cmd+[number]")
+      Text("Assign apps to keyboard shortcuts")
         .font(.caption)
         .foregroundColor(.secondary)
         .multilineTextAlignment(.center)
 
       ScrollView {
         VStack(spacing: 8) {
-          ForEach(apps) { app in
-            AppRowView(app: app) { appName, key in
-              hotkeyHandler.updateKeybinding(for: appName, key: key)
-            }
-            .padding(.horizontal)
+          ForEach(keybindings) { keybinding in
+            KeybindingRowView(
+              keybinding: keybinding,
+              onAssign: {
+                selectedKey = keybinding.key
+                showingAssignmentModal = true
+              },
+              onUnassign: {
+                hotkeyHandler.updateKeybinding(for: keybinding.assignedAppName ?? "", key: "")
+                updateKeybindings()
+              }
+            )
           }
         }
+        .padding(.horizontal)
       }
       .frame(maxHeight: 400)
 
@@ -97,17 +177,61 @@ struct ConfigView: View {
       .padding(.top)
     }
     .padding()
-    .frame(width: 600, height: 500)
+    .frame(width: 650, height: 550)
     .onAppear {
-      loadApps()
+      loadData()
+    }
+    .sheet(isPresented: $showingAssignmentModal) {
+      AppAssignmentModal(
+        availableApps: availableApps,
+        onSelectApp: { appName in
+          if let key = selectedKey {
+            // Clear any existing assignment for this app
+            clearExistingAssignment(for: appName)
+            hotkeyHandler.updateKeybinding(for: appName, key: key)
+            updateKeybindings()
+          }
+          showingAssignmentModal = false
+          selectedKey = nil
+        },
+        onCancel: {
+          showingAssignmentModal = false
+          selectedKey = nil
+        }
+      )
     }
   }
 
-  private func loadApps() {
+  private func loadData() {
+    loadAvailableApps()
+    updateKeybindings()
+  }
+
+  private func updateKeybindings() {
+    let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+
+    keybindings = keys.map { key in
+      let assignedAppName = getAppNameForKey(key)
+      var assignedAppIcon: NSImage?
+
+      if let appName = assignedAppName {
+        assignedAppIcon = getAppIcon(for: appName)
+      }
+
+      return KeybindingData(
+        key: key,
+        displayKey: key,
+        assignedAppName: assignedAppName,
+        assignedAppIcon: assignedAppIcon
+      )
+    }
+  }
+
+  private func loadAvailableApps() {
     let workspace = NSWorkspace.shared
     let runningApps = workspace.runningApplications
 
-    apps = runningApps.compactMap { app in
+    availableApps = runningApps.compactMap { app in
       guard app.activationPolicy == .regular else { return nil }
 
       let appName = app.localizedName ?? "Unknown App"
@@ -119,13 +243,38 @@ struct ConfigView: View {
 
       appIcon?.size = NSSize(width: 32, height: 32)
 
-      return AppData(
-        name: appName,
-        pid: app.processIdentifier,
-        icon: appIcon,
-        keyBinding: hotkeyHandler.appKeybindings[appName] ?? ""
-      )
+      return AvailableApp(name: appName, icon: appIcon)
     }
     .sorted { $0.name < $1.name }
+  }
+
+  private func getAppNameForKey(_ key: String) -> String? {
+    for (appName, assignedKey) in hotkeyHandler.appKeybindings {
+      if assignedKey == key {
+        return appName
+      }
+    }
+    return nil
+  }
+
+  private func getAppIcon(for appName: String) -> NSImage? {
+    let workspace = NSWorkspace.shared
+    let runningApps = workspace.runningApplications
+
+    for app in runningApps {
+      if app.localizedName == appName {
+        var appIcon = app.icon
+        if appIcon == nil, let bundleURL = app.bundleURL {
+          appIcon = workspace.icon(forFile: bundleURL.path)
+        }
+        appIcon?.size = NSSize(width: 32, height: 32)
+        return appIcon
+      }
+    }
+    return nil
+  }
+
+  private func clearExistingAssignment(for appName: String) {
+    hotkeyHandler.updateKeybinding(for: appName, key: "")
   }
 }
