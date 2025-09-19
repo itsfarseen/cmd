@@ -16,6 +16,7 @@ let package = Package(
         "AppDelegate.swift",
         "AppDiscovery.swift",
         "KeybindingCaptureView.swift",
+        "ConfigManager.swift",
         "ConfigurationUI/ConfigView.swift",
         "ConfigurationUI/AppsTabView.swift",
         "ConfigurationUI/SettingsTabView.swift",

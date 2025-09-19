@@ -108,25 +108,21 @@ class HotkeyHandler: ObservableObject {
   }
 
   func saveKeybindings() {
-    let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
-    let dict = NSDictionary(dictionary: keyAppBindings)
-    dict.write(toFile: filePath, atomically: true)
-    saveModifierSettings()
+    saveConfiguration()
   }
 
-  func saveModifierSettings() {
-    let settingsPath = NSHomeDirectory().appending("/.appswitch_settings")
-    let settings: [String: Any] = [
-      "useCmdModifier": useCmdModifier,
-      "useOptionModifier": useOptionModifier,
-      "useShiftModifier": useShiftModifier,
-      "configHotkeyKey": configHotkeyKey,
-      "configHotkeyUseCmdModifier": configHotkeyUseCmdModifier,
-      "configHotkeyUseOptionModifier": configHotkeyUseOptionModifier,
-      "configHotkeyUseShiftModifier": configHotkeyUseShiftModifier,
-    ]
-    let dict = NSDictionary(dictionary: settings)
-    dict.write(toFile: settingsPath, atomically: true)
+  func saveConfiguration() {
+    let config = AppConfiguration(
+      useCmdModifier: useCmdModifier,
+      useOptionModifier: useOptionModifier,
+      useShiftModifier: useShiftModifier,
+      configHotkeyKey: configHotkeyKey,
+      configHotkeyUseCmdModifier: configHotkeyUseCmdModifier,
+      configHotkeyUseOptionModifier: configHotkeyUseOptionModifier,
+      configHotkeyUseShiftModifier: configHotkeyUseShiftModifier,
+      keyAppBindings: keyAppBindings
+    )
+    ConfigManager.shared.saveConfiguration(config)
     registerGlobalKeybindings()
   }
 
@@ -143,24 +139,20 @@ class HotkeyHandler: ObservableObject {
   }
 
   private func loadKeybindings() {
-    let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
-    if let data = NSDictionary(contentsOfFile: filePath) as? [String: String] {
-      keyAppBindings = data
-    }
-    loadModifierSettings()
+    loadConfiguration()
   }
 
-  private func loadModifierSettings() {
-    let settingsPath = NSHomeDirectory().appending("/.appswitch_settings")
-    if let data = NSDictionary(contentsOfFile: settingsPath) as? [String: Any] {
-      useCmdModifier = data["useCmdModifier"] as? Bool ?? true
-      useOptionModifier = data["useOptionModifier"] as? Bool ?? false
-      useShiftModifier = data["useShiftModifier"] as? Bool ?? false
-      configHotkeyKey = data["configHotkeyKey"] as? String ?? ","
-      configHotkeyUseCmdModifier = data["configHotkeyUseCmdModifier"] as? Bool ?? true
-      configHotkeyUseOptionModifier = data["configHotkeyUseOptionModifier"] as? Bool ?? false
-      configHotkeyUseShiftModifier = data["configHotkeyUseShiftModifier"] as? Bool ?? false
-    }
+  private func loadConfiguration() {
+    let config = ConfigManager.shared.loadConfiguration()
+
+    keyAppBindings = config.keyAppBindings
+    useCmdModifier = config.useCmdModifier
+    useOptionModifier = config.useOptionModifier
+    useShiftModifier = config.useShiftModifier
+    configHotkeyKey = config.configHotkeyKey
+    configHotkeyUseCmdModifier = config.configHotkeyUseCmdModifier
+    configHotkeyUseOptionModifier = config.configHotkeyUseOptionModifier
+    configHotkeyUseShiftModifier = config.configHotkeyUseShiftModifier
   }
 
   private func clearGlobalKeybindings() {
