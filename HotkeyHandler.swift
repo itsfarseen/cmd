@@ -7,7 +7,7 @@ class HotkeyHandler: ObservableObject {
   private var registeredHotkeys: [EventHotKeyRef] = []
   private weak var appDelegate: AppDelegate?
   private var handlerRef: EventHandlerRef?
-  @Published private(set) var appKeybindings: [String: String] = [:]
+  @Published private(set) var keyAppBindings: [String: String] = [:]
   @Published private(set) var isPaused: Bool = false
 
   init(appDelegate: AppDelegate) {
@@ -63,11 +63,8 @@ class HotkeyHandler: ObservableObject {
     let targetKey = String(keyNumber)
 
     if let delegate = appDelegate {
-      for (appName, keyValue) in appKeybindings {
-        if keyValue == targetKey {
-          _ = delegate.switchToApp(named: appName)
-          break
-        }
+      if let appName = keyAppBindings[targetKey] {
+        _ = delegate.switchToApp(named: appName)
       }
     }
 
@@ -77,24 +74,28 @@ class HotkeyHandler: ObservableObject {
   func registerGlobalKeybindings() {
     clearGlobalKeybindings()
 
-    for (appName, keyValue) in appKeybindings {
-      if keyValue.count == 1, let keyChar = keyValue.first, keyChar.isNumber {
+    for (key, appName) in keyAppBindings {
+      if key.count == 1, let keyChar = key.first, keyChar.isNumber {
         registerKeybinding(for: keyChar, appName: appName)
       }
     }
   }
 
-  func updateKeybinding(for appName: String, key: String) {
-    if key.isEmpty {
-      appKeybindings.removeValue(forKey: appName)
-    } else if key.count == 1 && key.first?.isNumber == true {
-      appKeybindings[appName] = key
+  func setKeyBinding(key: String, appName: String?) {
+    if let appName = appName, key.count == 1 && key.first?.isNumber == true {
+      keyAppBindings[key] = appName
+    } else {
+      keyAppBindings.removeValue(forKey: key)
     }
+  }
+
+  func removeKeyBinding(key: String) {
+    keyAppBindings.removeValue(forKey: key)
   }
 
   func saveKeybindings() {
     let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
-    let dict = NSDictionary(dictionary: appKeybindings)
+    let dict = NSDictionary(dictionary: keyAppBindings)
     dict.write(toFile: filePath, atomically: true)
     registerGlobalKeybindings()
   }
@@ -114,7 +115,7 @@ class HotkeyHandler: ObservableObject {
   private func loadKeybindings() {
     let filePath = NSHomeDirectory().appending("/.appswitch_keybindings")
     if let data = NSDictionary(contentsOfFile: filePath) as? [String: String] {
-      appKeybindings = data
+      keyAppBindings = data
     }
   }
 

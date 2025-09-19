@@ -150,7 +150,7 @@ struct ConfigView: View {
                 showingAssignmentModal = true
               },
               onUnassign: {
-                hotkeyHandler.updateKeybinding(for: keybinding.assignedAppName ?? "", key: "")
+                hotkeyHandler.removeKeyBinding(key: keybinding.key)
                 updateKeybindings()
               }
             )
@@ -186,9 +186,7 @@ struct ConfigView: View {
         availableApps: availableApps,
         onSelectApp: { appName in
           if let key = selectedKey {
-            // Clear any existing assignment for this app
-            clearExistingAssignment(for: appName)
-            hotkeyHandler.updateKeybinding(for: appName, key: key)
+            hotkeyHandler.setKeyBinding(key: key, appName: appName)
             updateKeybindings()
           }
           showingAssignmentModal = false
@@ -249,12 +247,7 @@ struct ConfigView: View {
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
-    for (appName, assignedKey) in hotkeyHandler.appKeybindings {
-      if assignedKey == key {
-        return appName
-      }
-    }
-    return nil
+    return hotkeyHandler.keyAppBindings[key]
   }
 
   private func getAppIcon(for appName: String) -> NSImage? {
@@ -274,7 +267,4 @@ struct ConfigView: View {
     return nil
   }
 
-  private func clearExistingAssignment(for appName: String) {
-    hotkeyHandler.updateKeybinding(for: appName, key: "")
-  }
 }

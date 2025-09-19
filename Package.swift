@@ -14,8 +14,6 @@ let package = Package(
         "main.swift",
         "AppInfo.swift",
         "HotkeyHandler.swift",
-        "AppList.swift",
-        "ConfigWindow.swift",
         "ConfigView.swift",
         "AppDelegate.swift",
       ]
