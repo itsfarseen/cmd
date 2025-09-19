@@ -18,7 +18,7 @@ install: $(BUILD_DIR)/$(TARGET)
 
 format:
 	@if command -v swift-format >/dev/null 2>&1; then \
-		swift-format --in-place *.swift; \
+		swift-format --in-place *.swift ConfigurationUI/*.swift; \
 		echo "Formatted all Swift files"; \
 	else \
 		echo "swift-format not found. Install with: brew install swift-format"; \

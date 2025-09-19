@@ -13,11 +13,13 @@ let package = Package(
       sources: [
         "main.swift",
         "HotkeyHandler.swift",
-        "ConfigView.swift",
         "AppDelegate.swift",
         "AppDiscovery.swift",
         "KeybindingCaptureView.swift",
-        "AppAssignmentModal.swift",
+        "ConfigurationUI/ConfigView.swift",
+        "ConfigurationUI/AppsTabView.swift",
+        "ConfigurationUI/SettingsTabView.swift",
+        "ConfigurationUI/AppAssignmentModal.swift",
       ]
     )
   ]

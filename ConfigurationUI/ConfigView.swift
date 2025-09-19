@@ -117,9 +117,30 @@ struct ConfigView: View {
 
       // Tab content
       if selectedTab == 0 {
-        appsTabContent
+        AppsTabView(
+          keybindings: keybindings,
+          useCmdModifier: useCmdModifier,
+          useOptionModifier: useOptionModifier,
+          useShiftModifier: useShiftModifier,
+          onAssign: { key in
+            selectedKey = key
+            showingAssignmentModal = true
+          },
+          onUnassign: { key in
+            localKeyAppBindings.removeValue(forKey: key)
+            updateKeybindings()
+          }
+        )
       } else {
-        settingsTabContent
+        SettingsTabView(
+          useCmdModifier: $useCmdModifier,
+          useOptionModifier: $useOptionModifier,
+          useShiftModifier: $useShiftModifier,
+          configHotkeyKey: $configHotkeyKey,
+          configHotkeyUseCmdModifier: $configHotkeyUseCmdModifier,
+          configHotkeyUseOptionModifier: $configHotkeyUseOptionModifier,
+          configHotkeyUseShiftModifier: $configHotkeyUseShiftModifier
+        )
       }
 
       HStack(spacing: 12) {
@@ -183,78 +204,6 @@ struct ConfigView: View {
         }
       )
     }
-  }
-
-  private var appsTabContent: some View {
-    VStack(spacing: 16) {
-      Text("Assign apps to keyboard shortcuts")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-
-      ScrollView {
-        VStack(spacing: 8) {
-          ForEach(keybindings) { keybinding in
-            KeybindingRowView(
-              keybinding: keybinding,
-              onAssign: {
-                selectedKey = keybinding.key
-                showingAssignmentModal = true
-              },
-              onUnassign: {
-                localKeyAppBindings.removeValue(forKey: keybinding.key)
-                updateKeybindings()
-              },
-              useCmdModifier: useCmdModifier,
-              useOptionModifier: useOptionModifier,
-              useShiftModifier: useShiftModifier
-            )
-          }
-        }
-        .padding(.horizontal)
-      }
-      .frame(maxHeight: 400)
-    }
-  }
-
-  private var settingsTabContent: some View {
-    VStack(spacing: 20) {
-      VStack(spacing: 16) {
-        Text("App Switching Modifier Keys")
-          .font(.headline)
-          .frame(maxWidth: .infinity, alignment: .leading)
-
-        HStack(spacing: 20) {
-          Toggle("Command (⌘)", isOn: $useCmdModifier)
-          Toggle("Option (⌥)", isOn: $useOptionModifier)
-          Toggle("Shift (⇧)", isOn: $useShiftModifier)
-          Spacer()
-        }
-        .padding(.leading, 20)
-      }
-
-      Divider()
-
-      VStack(spacing: 16) {
-        Text("Quick Config Access")
-          .font(.headline)
-          .frame(maxWidth: .infinity, alignment: .leading)
-
-        HStack {
-          KeybindingCaptureView(
-            keybinding: $configHotkeyKey,
-            useCmdModifier: $configHotkeyUseCmdModifier,
-            useOptionModifier: $configHotkeyUseOptionModifier,
-            useShiftModifier: $configHotkeyUseShiftModifier
-          )
-          Spacer()
-        }
-        .padding(.leading, 20)
-      }
-
-      Spacer()
-    }
-    .frame(maxHeight: 400)
   }
 
   private func loadData() {
