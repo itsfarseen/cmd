@@ -1,7 +1,7 @@
 SWIFT = swiftc
 FRAMEWORKS = -framework Cocoa -framework Carbon -framework ApplicationServices -framework CoreFoundation
 TARGET = AppSwitcher
-SOURCE = main.swift
+SOURCE = main.swift AppInfo.swift HotkeyHandler.swift AppList.swift ConfigWindow.swift AppDelegate.swift
 BUILD_DIR = build
 
 all: $(BUILD_DIR)/$(TARGET)
