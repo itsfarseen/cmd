@@ -16,4 +16,12 @@ install: $(BUILD_DIR)/$(TARGET)
 	mkdir -p $(HOME)/Applications
 	cp $(BUILD_DIR)/$(TARGET) $(HOME)/Applications/
 
-.PHONY: all clean install
+format:
+	@if command -v swift-format >/dev/null 2>&1; then \
+		swift-format --in-place *.swift; \
+		echo "Formatted all Swift files"; \
+	else \
+		echo "swift-format not found. Install with: brew install swift-format"; \
+	fi
+
+.PHONY: all clean install format
