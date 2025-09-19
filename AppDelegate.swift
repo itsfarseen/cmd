@@ -59,7 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     updateMenuItems()
   }
 
-  @objc private func showConfigWindow() {
+  @objc func showConfigWindow() {
     if configWindow != nil {
       configWindow?.makeKeyAndOrderFront(nil)
       return
