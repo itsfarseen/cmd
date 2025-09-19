@@ -8,6 +8,7 @@ struct SettingsTabView: View {
   @Binding var configHotkeyUseCmdModifier: Bool
   @Binding var configHotkeyUseOptionModifier: Bool
   @Binding var configHotkeyUseShiftModifier: Bool
+  let onSettingsChanged: () -> Void
 
   var body: some View {
     VStack(spacing: 20) {
@@ -18,8 +19,11 @@ struct SettingsTabView: View {
 
         HStack(spacing: 20) {
           Toggle("Command (⌘)", isOn: $useCmdModifier)
+            .onChange(of: useCmdModifier) { _ in onSettingsChanged() }
           Toggle("Option (⌥)", isOn: $useOptionModifier)
+            .onChange(of: useOptionModifier) { _ in onSettingsChanged() }
           Toggle("Shift (⇧)", isOn: $useShiftModifier)
+            .onChange(of: useShiftModifier) { _ in onSettingsChanged() }
           Spacer()
         }
         .padding(.leading, 20)
@@ -39,6 +43,10 @@ struct SettingsTabView: View {
             useOptionModifier: $configHotkeyUseOptionModifier,
             useShiftModifier: $configHotkeyUseShiftModifier
           )
+          .onChange(of: configHotkeyKey) { _ in onSettingsChanged() }
+          .onChange(of: configHotkeyUseCmdModifier) { _ in onSettingsChanged() }
+          .onChange(of: configHotkeyUseOptionModifier) { _ in onSettingsChanged() }
+          .onChange(of: configHotkeyUseShiftModifier) { _ in onSettingsChanged() }
           Spacer()
         }
         .padding(.leading, 20)
