@@ -229,6 +229,7 @@ struct AppAssignmentModal: View {
 struct ConfigView: View {
   @ObservedObject var hotkeyHandler: HotkeyHandler
   @State private var keybindings: [KeybindingData] = []
+  @State private var localKeyAppBindings: [String: String] = [:]
   @State private var runningApps: [AvailableApp] = []
   @State private var installedApps: [AvailableApp] = []
   @State private var showingAssignmentModal = false
@@ -256,7 +257,7 @@ struct ConfigView: View {
                 showingAssignmentModal = true
               },
               onUnassign: {
-                hotkeyHandler.removeKeyBinding(key: keybinding.key)
+                localKeyAppBindings.removeValue(forKey: keybinding.key)
                 updateKeybindings()
               }
             )
@@ -272,6 +273,13 @@ struct ConfigView: View {
         }
 
         Button("Save") {
+          // Apply local changes to the hotkey handler
+          for (key, _) in hotkeyHandler.keyAppBindings {
+            hotkeyHandler.removeKeyBinding(key: key)
+          }
+          for (key, appName) in localKeyAppBindings {
+            hotkeyHandler.setKeyBinding(key: key, appName: appName)
+          }
           hotkeyHandler.saveKeybindings()
           onDismiss()
         }
@@ -293,7 +301,7 @@ struct ConfigView: View {
         installedApps: installedApps,
         onSelectApp: { appName in
           if let key = selectedKey {
-            hotkeyHandler.setKeyBinding(key: key, appName: appName)
+            localKeyAppBindings[key] = appName
             updateKeybindings()
           }
           showingAssignmentModal = false
@@ -314,6 +322,7 @@ struct ConfigView: View {
   }
 
   private func loadData() {
+    localKeyAppBindings = hotkeyHandler.keyAppBindings
     loadRunningApps()
     loadInstalledApps()
     updateKeybindings()
@@ -366,7 +375,7 @@ struct ConfigView: View {
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
-    return hotkeyHandler.keyAppBindings[key]
+    return localKeyAppBindings[key]
   }
 
   private func getAppIcon(for appName: String) -> NSImage? {
