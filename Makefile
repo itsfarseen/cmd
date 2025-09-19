@@ -1,47 +1,25 @@
-# Compiler and flags
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
-FRAMEWORKS = -framework CoreFoundation -framework ApplicationServices
-LDFLAGS = $(FRAMEWORKS)
+SWIFT = swiftc
+FRAMEWORKS = -framework Cocoa -framework Carbon -framework ApplicationServices -framework CoreFoundation
+TARGET = AppSwitcher
+SOURCE = main.swift
+BUILD_DIR = build
 
-# Target executable
-TARGET = appswitch
-SOURCE = appswitch.c
+all: $(BUILD_DIR)/$(TARGET)
 
-# Install directory
-PREFIX = /usr/local
-BINDIR = $(PREFIX)/bin
+run: $(BUILD_DIR)/$(TARGET)
+	$(BUILD_DIR)/$(TARGET)
 
-# Default target
-all: $(TARGET)
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-# Build the executable
-$(TARGET): $(SOURCE)
-	$(CC) $(CFLAGS) $(SOURCE) $(LDFLAGS) -o $(TARGET)
+$(BUILD_DIR)/$(TARGET): $(SOURCE) | $(BUILD_DIR)
+	$(SWIFT) -g $(FRAMEWORKS) -o $(BUILD_DIR)/$(TARGET) $(SOURCE)
 
-# Clean build artifacts
 clean:
-	rm -f $(TARGET)
+	rm -rf $(BUILD_DIR)
 
-# Rebuild everything
-rebuild: clean all
+install: $(BUILD_DIR)/$(TARGET)
+	mkdir -p $(HOME)/Applications
+	cp $(BUILD_DIR)/$(TARGET) $(HOME)/Applications/
 
-# Debug build with symbols
-debug: CFLAGS += -g -DDEBUG
-debug: $(TARGET)
-
-# Release build with optimizations
-release: CFLAGS += -O2 -DNDEBUG
-release: $(TARGET)
-
-# Show help
-help:
-	@echo "Available targets:"
-	@echo "  all      - Build the application (default)"
-	@echo "  clean    - Remove build artifacts"
-	@echo "  rebuild  - Clean and build"
-	@echo "  debug    - Build with debug symbols"
-	@echo "  release  - Build optimized release version"
-	@echo "  help     - Show this help"
-
-.PHONY: all clean rebuild debug release help
+.PHONY: all clean install
