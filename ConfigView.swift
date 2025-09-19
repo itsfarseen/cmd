@@ -12,9 +12,12 @@ struct AvailableApp: Identifiable {
   let id = UUID()
   let name: String
   let icon: NSImage?
+  let bundleURL: URL?
 }
 
 class AppDiscovery {
+  static let shared = AppDiscovery()
+
   private let applicationPaths = [
     "/Applications",
     "/System/Applications",
@@ -23,6 +26,8 @@ class AppDiscovery {
 
   private let workspace = NSWorkspace.shared
   private var appNameToAppMapping: [String: AvailableApp] = [:]
+
+  private init() {}
 
   func refresh() {
     var apps: [String: AvailableApp] = [:]
@@ -43,7 +48,7 @@ class AppDiscovery {
         let appIcon = workspace.icon(forFile: fileURL.path)
         appIcon.size = NSSize(width: 32, height: 32)
 
-        apps[appName] = AvailableApp(name: appName, icon: appIcon)
+        apps[appName] = AvailableApp(name: appName, icon: appIcon, bundleURL: fileURL)
       }
     }
 
@@ -64,6 +69,14 @@ class AppDiscovery {
     }
 
     return appNameToAppMapping[appName]?.icon
+  }
+
+  func findAppBundleURL(for appName: String) -> URL? {
+    if appNameToAppMapping.isEmpty {
+      refresh()
+    }
+
+    return appNameToAppMapping[appName]?.bundleURL
   }
 }
 
@@ -222,8 +235,6 @@ struct ConfigView: View {
   @State private var selectedKey: String?
   let onDismiss: () -> Void
 
-  private let appDiscovery = AppDiscovery()
-
   var body: some View {
     VStack(spacing: 16) {
       Text("App Switcher Configuration")
@@ -344,14 +355,14 @@ struct ConfigView: View {
 
       appIcon?.size = NSSize(width: 32, height: 32)
 
-      return AvailableApp(name: appName, icon: appIcon)
+      return AvailableApp(name: appName, icon: appIcon, bundleURL: app.bundleURL)
     }
     .sorted { $0.name < $1.name }
   }
 
   private func loadInstalledApps() {
-    appDiscovery.refresh()
-    installedApps = appDiscovery.getInstalledApps()
+    AppDiscovery.shared.refresh()
+    installedApps = AppDiscovery.shared.getInstalledApps()
   }
 
   private func getAppNameForKey(_ key: String) -> String? {
@@ -375,7 +386,7 @@ struct ConfigView: View {
     }
 
     // If not found in running apps, search installed apps using AppDiscovery
-    return appDiscovery.findAppIcon(for: appName)
+    return AppDiscovery.shared.findAppIcon(for: appName)
   }
 
 }

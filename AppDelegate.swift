@@ -100,9 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let workspace = NSWorkspace.shared
     let apps = workspace.runningApplications
 
+    // First, check if the app is already running
     for app in apps {
       if app.localizedName == appName {
-        // Try to open the app using NSWorkspace which can restore minimized windows
+        // App is running, just switch to it (don't fullscreen)
         if let bundleURL = app.bundleURL {
           workspace.openApplication(
             at: bundleURL, configuration: NSWorkspace.OpenConfiguration()
@@ -112,7 +113,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
 
-    return false
+    // App is not running, launch it normally
+    return launchApp(named: appName)
+  }
+
+  private func launchApp(named appName: String) -> Bool {
+    let workspace = NSWorkspace.shared
+
+    // Use AppDiscovery to find the bundle URL
+    guard let bundleURL = AppDiscovery.shared.findAppBundleURL(for: appName) else {
+      return false
+    }
+
+    // Launch the app normally
+    let configuration = NSWorkspace.OpenConfiguration()
+    workspace.openApplication(at: bundleURL, configuration: configuration) { _, _ in }
+    return true
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
