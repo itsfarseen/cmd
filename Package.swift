@@ -12,10 +12,12 @@ let package = Package(
       path: ".",
       sources: [
         "main.swift",
-        "AppInfo.swift",
         "HotkeyHandler.swift",
         "ConfigView.swift",
         "AppDelegate.swift",
+        "AppDiscovery.swift",
+        "KeybindingCaptureView.swift",
+        "AppAssignmentModal.swift",
       ]
     )
   ]
