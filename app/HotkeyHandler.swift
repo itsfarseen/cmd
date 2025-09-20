@@ -72,6 +72,14 @@ class HotkeyHandler: ObservableObject {
       return noErr
     }
 
+    // Check if this is the app switcher hotkey
+    if hotkeyID.id == 3000 {
+      if let delegate = appDelegate {
+        _ = delegate.switchToPreviousApp()
+      }
+      return noErr
+    }
+
     // Handle app switching hotkeys
     let keyNumber = Int(hotkeyID.id - 1000)
     let targetKey = String(keyNumber)
@@ -90,6 +98,9 @@ class HotkeyHandler: ObservableObject {
     registerAllNumberKeys()
     if !configManager.configHotkeyKey.isEmpty {
       registerConfigHotkey()
+    }
+    if !configManager.appSwitcherHotkeyKey.isEmpty {
+      registerAppSwitcherHotkey()
     }
     updateWorkspaceSwitching()
   }
@@ -287,6 +298,35 @@ class HotkeyHandler: ObservableObject {
     let status = RegisterEventHotKey(
       keyCode,
       configModifierFlags,
+      hotKeyID,
+      GetApplicationEventTarget(),
+      0,
+      &hotKeyRef
+    )
+
+    if status == noErr, let hotkey = hotKeyRef {
+      registeredHotkeys.append(hotkey)
+    }
+  }
+
+  private func registerAppSwitcherHotkey() {
+    let keyCode = keyCodeForCharacter(configManager.appSwitcherHotkeyKey)
+    guard keyCode != 0 else { return }
+
+    var appSwitcherModifierFlags: UInt32 = 0
+    if configManager.appSwitcherUseCmdModifier { appSwitcherModifierFlags |= UInt32(cmdKey) }
+    if configManager.appSwitcherUseOptionModifier { appSwitcherModifierFlags |= UInt32(optionKey) }
+    if configManager.appSwitcherUseShiftModifier { appSwitcherModifierFlags |= UInt32(shiftKey) }
+
+    // If no modifiers are selected, default to Command
+    if appSwitcherModifierFlags == 0 { appSwitcherModifierFlags = UInt32(cmdKey) }
+
+    var hotKeyRef: EventHotKeyRef?
+    let hotKeyID = EventHotKeyID(signature: fourCharCodeFrom("APPS"), id: 3000)
+
+    let status = RegisterEventHotKey(
+      keyCode,
+      appSwitcherModifierFlags,
       hotKeyID,
       GetApplicationEventTarget(),
       0,

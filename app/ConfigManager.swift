@@ -31,7 +31,7 @@ class ConfigManager: ObservableObject {
   @Published var useShiftModifier: Bool = false {
     didSet { if !isLoading { saveConfiguration() } }
   }
-  @Published var configHotkeyKey: String = "," {
+  @Published var configHotkeyKey: String = "`" {
     didSet { if !isLoading { saveConfiguration() } }
   }
   @Published var configHotkeyUseCmdModifier: Bool = true {
@@ -40,7 +40,19 @@ class ConfigManager: ObservableObject {
   @Published var configHotkeyUseOptionModifier: Bool = false {
     didSet { if !isLoading { saveConfiguration() } }
   }
-  @Published var configHotkeyUseShiftModifier: Bool = false {
+  @Published var configHotkeyUseShiftModifier: Bool = true {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var appSwitcherHotkeyKey: String = "`" {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var appSwitcherUseCmdModifier: Bool = true {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var appSwitcherUseOptionModifier: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
+  @Published var appSwitcherUseShiftModifier: Bool = false {
     didSet { if !isLoading { saveConfiguration() } }
   }
   @Published var keyAppBindings: [String: String] = [:] {
@@ -112,6 +124,10 @@ class ConfigManager: ObservableObject {
     lines.append("config_hotkey_use_cmd=\(configHotkeyUseCmdModifier ? "true" : "false")")
     lines.append("config_hotkey_use_option=\(configHotkeyUseOptionModifier ? "true" : "false")")
     lines.append("config_hotkey_use_shift=\(configHotkeyUseShiftModifier ? "true" : "false")")
+    lines.append("app_switcher_hotkey_key=\(appSwitcherHotkeyKey)")
+    lines.append("app_switcher_use_cmd=\(appSwitcherUseCmdModifier ? "true" : "false")")
+    lines.append("app_switcher_use_option=\(appSwitcherUseOptionModifier ? "true" : "false")")
+    lines.append("app_switcher_use_shift=\(appSwitcherUseShiftModifier ? "true" : "false")")
     lines.append(
       "enable_linux_word_movement_mapping=\(enableLinuxWordMovementMapping ? "true" : "false")")
     lines.append(
@@ -139,13 +155,21 @@ class ConfigManager: ObservableObject {
     case "use_shift_modifier":
       useShiftModifier = parseBoolValue(value, key: key) ?? false
     case "config_hotkey_key":
-      configHotkeyKey = parseHotkeyKey(value, key: key) ?? ","
+      configHotkeyKey = parseHotkeyKey(value, key: key) ?? "`"
     case "config_hotkey_use_cmd":
       configHotkeyUseCmdModifier = parseBoolValue(value, key: key) ?? true
     case "config_hotkey_use_option":
       configHotkeyUseOptionModifier = parseBoolValue(value, key: key) ?? false
     case "config_hotkey_use_shift":
-      configHotkeyUseShiftModifier = parseBoolValue(value, key: key) ?? false
+      configHotkeyUseShiftModifier = parseBoolValue(value, key: key) ?? true
+    case "app_switcher_hotkey_key":
+      appSwitcherHotkeyKey = parseHotkeyKey(value, key: key) ?? "`"
+    case "app_switcher_use_cmd":
+      appSwitcherUseCmdModifier = parseBoolValue(value, key: key) ?? true
+    case "app_switcher_use_option":
+      appSwitcherUseOptionModifier = parseBoolValue(value, key: key) ?? false
+    case "app_switcher_use_shift":
+      appSwitcherUseShiftModifier = parseBoolValue(value, key: key) ?? false
     case "enable_linux_word_movement_mapping":
       enableLinuxWordMovementMapping = parseBoolValue(value, key: key) ?? false
     case "enable_chromeos_workspace_switching":
@@ -169,10 +193,14 @@ class ConfigManager: ObservableObject {
     useCmdModifier = true
     useOptionModifier = false
     useShiftModifier = false
-    configHotkeyKey = ","
+    configHotkeyKey = "`"
     configHotkeyUseCmdModifier = true
     configHotkeyUseOptionModifier = false
-    configHotkeyUseShiftModifier = false
+    configHotkeyUseShiftModifier = true
+    appSwitcherHotkeyKey = "`"
+    appSwitcherUseCmdModifier = true
+    appSwitcherUseOptionModifier = false
+    appSwitcherUseShiftModifier = false
     enableLinuxWordMovementMapping = false
     enableChromeOSWorkspaceSwitching = false
     keyAppBindings = [:]

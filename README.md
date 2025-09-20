@@ -32,6 +32,7 @@ CmdN brings the simplicity and efficiency of i3-style keyboard shortcuts to macO
 - Assign number keys (0-9) to your favorite applications
 - Single-keystroke access with customizable modifiers
 - Instantly bring any app to focus from anywhere
+- App back and forth: Toggle between your two most recently used apps
 
 ### ⚙️ **Thoughtful Configuration**
 - Intuitive configuration interface
@@ -103,8 +104,9 @@ CmdN brings the simplicity and efficiency of i3-style keyboard shortcuts to macO
 ### Usage
 
 - **Switch Apps**: Use your configured shortcut (default: `Cmd+<number>`)
+- **App Back and Forth**: Toggle between recent apps (default: `Cmd+backtick`)
 - **Workspace Navigation**: `Cmd+[` and `Cmd+]` to switch between Spaces
-- **Quick Config**: Use your configured hotkey to open settings instantly
+- **Quick Config**: Use your configured hotkey to open settings instantly (default: `Cmd+Shift+backtick`)
 - **Pause/Resume**: Right-click menu bar icon for temporary disable
 
 ## Configuration
@@ -117,6 +119,7 @@ CmdN brings the simplicity and efficiency of i3-style keyboard shortcuts to macO
 ### Customization Options
 - **Modifier Keys**: Choose from Cmd, Option, Shift combinations
 - **Configuration Hotkey**: Set custom shortcut for settings access
+- **App Back and Forth**: Configure hotkey for toggling between recent apps (i3-style "workspace back and forth")
 - **Word Movement**: Enable Linux-style Ctrl+Left/Right navigation
 - **Startup Behavior**: Configure automatic launch preferences
 

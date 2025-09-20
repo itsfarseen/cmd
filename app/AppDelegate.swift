@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private(set) var hotkeyHandler: HotkeyHandler?
   private let accessibilityManager = AccessibilityManager.shared
   private let configManager = ConfigManager.shared
+  private var previousAppName: String = ""
 
   override init() {
     super.init()
@@ -78,6 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   @objc func showConfigWindow() {
     if configWindow != nil {
       configWindow?.makeKeyAndOrderFront(nil)
+      NSApp.activate(ignoringOtherApps: true)
       return
     }
 
@@ -116,6 +118,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let workspace = NSWorkspace.shared
     let apps = workspace.runningApplications
 
+    // Track the current app as previous before switching
+    if let currentApp = workspace.frontmostApplication,
+       let currentAppName = currentApp.localizedName,
+       currentAppName != appName {
+      previousAppName = currentAppName
+    }
+
     // First, check if the app is already running
     for app in apps {
       if app.localizedName == appName {
@@ -131,6 +140,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // App is not running, launch it normally
     return launchApp(named: appName)
+  }
+
+  func switchToPreviousApp() -> Bool {
+    guard !previousAppName.isEmpty else { return false }
+    return switchToApp(named: previousAppName)
   }
 
   private func launchApp(named appName: String) -> Bool {

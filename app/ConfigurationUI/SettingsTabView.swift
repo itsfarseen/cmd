@@ -18,6 +18,10 @@ struct SettingsTabView: View {
   @Binding var configHotkeyUseCmdModifier: Bool
   @Binding var configHotkeyUseOptionModifier: Bool
   @Binding var configHotkeyUseShiftModifier: Bool
+  @Binding var appSwitcherHotkeyKey: String
+  @Binding var appSwitcherUseCmdModifier: Bool
+  @Binding var appSwitcherUseOptionModifier: Bool
+  @Binding var appSwitcherUseShiftModifier: Bool
   @Binding var enableLinuxWordMovementMapping: Bool
   @Binding var enableChromeOSWorkspaceSwitching: Bool
   let onSettingsChanged: () -> Void
@@ -65,6 +69,37 @@ struct SettingsTabView: View {
           .onChange(of: configHotkeyUseCmdModifier) { _ in onSettingsChanged() }
           .onChange(of: configHotkeyUseOptionModifier) { _ in onSettingsChanged() }
           .onChange(of: configHotkeyUseShiftModifier) { _ in onSettingsChanged() }
+          Spacer()
+        }
+        .padding(.leading, Constants.contentLeadingPadding)
+      }
+
+      Divider()
+
+      VStack(spacing: Constants.contentSpacing) {
+        Text("App Back and Forth")
+          .font(.headline)
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+        HStack {
+          KeybindingCaptureView(
+            keybinding: $appSwitcherHotkeyKey,
+            useCmdModifier: $appSwitcherUseCmdModifier,
+            useOptionModifier: $appSwitcherUseOptionModifier,
+            useShiftModifier: $appSwitcherUseShiftModifier
+          )
+          .onChange(of: appSwitcherHotkeyKey) { _ in onSettingsChanged() }
+          .onChange(of: appSwitcherUseCmdModifier) { _ in onSettingsChanged() }
+          .onChange(of: appSwitcherUseOptionModifier) { _ in onSettingsChanged() }
+          .onChange(of: appSwitcherUseShiftModifier) { _ in onSettingsChanged() }
+          Spacer()
+        }
+        .padding(.leading, Constants.contentLeadingPadding)
+
+        HStack {
+          Text("Toggle between two most recently used apps (i3's \"workspace back and forth\")")
+            .font(.caption)
+            .foregroundColor(.secondary)
           Spacer()
         }
         .padding(.leading, Constants.contentLeadingPadding)

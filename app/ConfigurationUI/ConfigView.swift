@@ -98,6 +98,10 @@ struct ConfigView: View {
               configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
               configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
               configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
+              appSwitcherHotkeyKey: $configManager.appSwitcherHotkeyKey,
+              appSwitcherUseCmdModifier: $configManager.appSwitcherUseCmdModifier,
+              appSwitcherUseOptionModifier: $configManager.appSwitcherUseOptionModifier,
+              appSwitcherUseShiftModifier: $configManager.appSwitcherUseShiftModifier,
               enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
               enableChromeOSWorkspaceSwitching: $configManager.enableChromeOSWorkspaceSwitching,
               onSettingsChanged: {
