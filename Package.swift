@@ -18,6 +18,7 @@ let package = Package(
         "KeybindingCaptureView.swift",
         "ConfigManager.swift",
         "AccessibilityManager.swift",
+        "LoginItemManager.swift",
         "ConfigurationUI/ConfigView.swift",
         "ConfigurationUI/AppsTabView.swift",
         "ConfigurationUI/SettingsTabView.swift",

@@ -13,7 +13,10 @@ struct SettingsTabView: View {
   let onSettingsChanged: () -> Void
 
   @State private var hasAccessibilityPermission = false
+  @State private var loginItemEnabled = false
+  @State private var loginItemValidation = LoginItemManager.ValidationResult.valid
   private let accessibilityManager = AccessibilityManager.shared
+  private let loginItemManager = LoginItemManager.shared
 
   var body: some View {
     VStack(spacing: 16) {
@@ -53,6 +56,35 @@ struct SettingsTabView: View {
           .onChange(of: configHotkeyUseOptionModifier) { _ in onSettingsChanged() }
           .onChange(of: configHotkeyUseShiftModifier) { _ in onSettingsChanged() }
           Spacer()
+        }
+        .padding(.leading, 20)
+      }
+
+      Divider()
+
+      VStack(spacing: 16) {
+        Text("Startup")
+          .font(.headline)
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+        VStack(alignment: .leading, spacing: 8) {
+          Toggle("Start at login", isOn: $loginItemEnabled)
+            .disabled(!isLoginItemToggleEnabled)
+            .onChange(of: loginItemEnabled) { newValue in
+              handleLoginItemToggle(newValue)
+            }
+
+          if case .invalidLocation(let message) = loginItemValidation {
+            Text(message)
+              .font(.caption)
+              .foregroundColor(.orange)
+          }
+
+          if case .duplicateInstallation(let message) = loginItemValidation {
+            Text("⚠️ \(message)")
+              .font(.caption)
+              .foregroundColor(.red)
+          }
         }
         .padding(.leading, 20)
       }
@@ -127,9 +159,10 @@ struct SettingsTabView: View {
 
       Spacer()
     }
-    .frame(maxHeight: 400)
+    .frame(maxHeight: 500)
     .onAppear {
       checkAccessibilityPermission()
+      checkLoginItemStatus()
     }
   }
 
@@ -142,6 +175,28 @@ struct SettingsTabView: View {
     // Check again after a short delay to update UI
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       checkAccessibilityPermission()
+    }
+  }
+
+  private func checkLoginItemStatus() {
+    loginItemValidation = loginItemManager.validateInstallationForLoginItem()
+    loginItemEnabled = loginItemManager.isLoginItemEnabled()
+  }
+
+  private var isLoginItemToggleEnabled: Bool {
+    switch loginItemValidation {
+    case .valid:
+      return true
+    case .invalidLocation, .duplicateInstallation:
+      return false
+    }
+  }
+
+  private func handleLoginItemToggle(_ enabled: Bool) {
+    let success = loginItemManager.setLoginItemEnabled(enabled)
+    if !success {
+      // Revert the toggle if it failed
+      loginItemEnabled = loginItemManager.isLoginItemEnabled()
     }
   }
 }
