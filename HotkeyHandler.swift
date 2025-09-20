@@ -9,15 +9,20 @@ class HotkeyHandler: ObservableObject {
   private var handlerRef: EventHandlerRef?
   @Published private(set) var isPaused: Bool = false
   private let configManager = ConfigManager.shared
+  private var workspaceEventTap: CFMachPort?
+  private var lastWorkspaceEventTime: TimeInterval = 0
+  private let workspaceEventThreshold: TimeInterval = 0.1  // 100ms threshold
 
   init(appDelegate: AppDelegate) {
     self.appDelegate = appDelegate
     installEventHandler()
     updateGlobalKeybindings()
+    updateWorkspaceSwitching()
   }
 
   deinit {
     clearGlobalKeybindings()
+    disableWorkspaceSwitching()
     if let handlerRef = handlerRef {
       RemoveEventHandler(handlerRef)
     }
@@ -86,6 +91,116 @@ class HotkeyHandler: ObservableObject {
     if !configManager.configHotkeyKey.isEmpty {
       registerConfigHotkey()
     }
+    updateWorkspaceSwitching()
+  }
+
+  private func updateWorkspaceSwitching() {
+    disableWorkspaceSwitching()
+    if configManager.enableChromeOSWorkspaceSwitching {
+      enableWorkspaceSwitching()
+    }
+  }
+
+  private func enableWorkspaceSwitching() {
+    let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+
+    guard
+      let eventTap = CGEvent.tapCreate(
+        tap: .cgSessionEventTap,
+        place: .headInsertEventTap,
+        options: .defaultTap,
+        eventsOfInterest: eventMask,
+        callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+          guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
+          let handler = Unmanaged<HotkeyHandler>.fromOpaque(refcon).takeUnretainedValue()
+          return handler.workspaceEventCallback(proxy: proxy, type: type, event: event)
+        },
+        userInfo: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+      )
+    else {
+      return
+    }
+
+    workspaceEventTap = eventTap
+
+    let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+    CGEvent.tapEnable(tap: eventTap, enable: true)
+  }
+
+  private func disableWorkspaceSwitching() {
+    if let eventTap = workspaceEventTap {
+      CGEvent.tapEnable(tap: eventTap, enable: false)
+      CFMachPortInvalidate(eventTap)
+      workspaceEventTap = nil
+    }
+  }
+
+  private func workspaceEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent)
+    -> Unmanaged<CGEvent>?
+  {
+    guard !isPaused, type == .keyDown else {
+      return Unmanaged.passUnretained(event)
+    }
+
+    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+    let flags = event.flags
+
+    // Check for Cmd+[ (simulate Ctrl+Left for previous workspace)
+    if keyCode == 33 && flags.contains(.maskCommand) {  // kVK_LeftBracket = 33
+      sendCtrlArrow(keyCode: 123)  // kVK_LeftArrow = 123
+      return nil  // Consume the event
+    }
+
+    // Check for Cmd+] (simulate Ctrl+Right for next workspace)
+    if keyCode == 30 && flags.contains(.maskCommand) {  // kVK_RightBracket = 30
+      sendCtrlArrow(keyCode: 124)  // kVK_RightArrow = 124
+      return nil  // Consume the event
+    }
+
+    return Unmanaged.passUnretained(event)
+  }
+
+  private func sendCtrlArrow(keyCode: CGKeyCode) {
+    let kVK_Control: CGKeyCode = 59
+
+    // Record the time we're generating workspace events
+    lastWorkspaceEventTime = Date().timeIntervalSince1970
+
+    // Control down
+    guard
+      let controlDown = CGEvent(keyboardEventSource: nil, virtualKey: kVK_Control, keyDown: true)
+    else {
+      return
+    }
+    controlDown.flags = .maskControl
+
+    // Arrow down (with control flag)
+    guard let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true) else {
+      return
+    }
+    keyDown.flags = [.maskControl, .maskSecondaryFn]
+
+    // Arrow up (with control flag)
+    guard let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false) else {
+      return
+    }
+    keyUp.flags = [.maskControl, .maskSecondaryFn]
+
+    // Control up
+    guard let controlUp = CGEvent(keyboardEventSource: nil, virtualKey: kVK_Control, keyDown: false)
+    else {
+      return
+    }
+
+    controlDown.post(tap: .cghidEventTap)
+    keyDown.post(tap: .cghidEventTap)
+
+    // Small delay between down and up
+    usleep(10000)  // 10ms
+
+    keyUp.post(tap: .cghidEventTap)
+    controlUp.post(tap: .cghidEventTap)
   }
 
   func pause() {
@@ -98,6 +213,11 @@ class HotkeyHandler: ObservableObject {
 
   func togglePause() {
     isPaused.toggle()
+  }
+
+  func isWithinWorkspaceEventThreshold() -> Bool {
+    let currentTime = Date().timeIntervalSince1970
+    return (currentTime - lastWorkspaceEventTime) < workspaceEventThreshold
   }
 
   private func clearGlobalKeybindings() {

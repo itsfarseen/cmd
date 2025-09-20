@@ -49,6 +49,9 @@ class ConfigManager: ObservableObject {
   @Published var enableLinuxWordMovementMapping: Bool = false {
     didSet { if !isLoading { saveConfiguration() } }
   }
+  @Published var enableChromeOSWorkspaceSwitching: Bool = false {
+    didSet { if !isLoading { saveConfiguration() } }
+  }
 
   private var isLoading = false
 
@@ -111,6 +114,8 @@ class ConfigManager: ObservableObject {
     lines.append("config_hotkey_use_shift=\(configHotkeyUseShiftModifier ? "true" : "false")")
     lines.append(
       "enable_linux_word_movement_mapping=\(enableLinuxWordMovementMapping ? "true" : "false")")
+    lines.append(
+      "enable_chromeos_workspace_switching=\(enableChromeOSWorkspaceSwitching ? "true" : "false")")
 
     for (key, appName) in keyAppBindings.sorted(by: { $0.key < $1.key }) {
       lines.append("keybinding.\(key)=\(appName)")
@@ -143,6 +148,8 @@ class ConfigManager: ObservableObject {
       configHotkeyUseShiftModifier = parseBoolValue(value, key: key) ?? false
     case "enable_linux_word_movement_mapping":
       enableLinuxWordMovementMapping = parseBoolValue(value, key: key) ?? false
+    case "enable_chromeos_workspace_switching":
+      enableChromeOSWorkspaceSwitching = parseBoolValue(value, key: key) ?? false
     default:
       if key.hasPrefix("keybinding.") {
         let shortKey = String(key.dropFirst("keybinding.".count))
@@ -167,6 +174,7 @@ class ConfigManager: ObservableObject {
     configHotkeyUseOptionModifier = false
     configHotkeyUseShiftModifier = false
     enableLinuxWordMovementMapping = false
+    enableChromeOSWorkspaceSwitching = false
     keyAppBindings = [:]
 
     // Load from file

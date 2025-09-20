@@ -19,6 +19,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     setupMenuBar()
     hotkeyHandler = HotkeyHandler(appDelegate: self)
+    if let handler = hotkeyHandler {
+      accessibilityManager.setHotkeyHandler(handler)
+    }
     hotkeyHandler?.updateGlobalKeybindings()
 
     // Start accessibility features if enabled

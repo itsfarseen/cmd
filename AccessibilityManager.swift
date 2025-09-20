@@ -7,8 +7,13 @@ class AccessibilityManager: ObservableObject {
 
   private var eventTap: CFMachPort?
   private let configManager = ConfigManager.shared
+  private weak var hotkeyHandler: HotkeyHandler?
 
   private init() {}
+
+  func setHotkeyHandler(_ handler: HotkeyHandler) {
+    hotkeyHandler = handler
+  }
 
   // MARK: - Accessibility Permission
 
@@ -25,7 +30,6 @@ class AccessibilityManager: ObservableObject {
 
   func startKeyRemapping() {
     guard hasAccessibilityPermission() else {
-      print("Accessibility permission not granted")
       return
     }
 
@@ -39,13 +43,13 @@ class AccessibilityManager: ObservableObject {
       options: .defaultTap,
       eventsOfInterest: CGEventMask(eventMask),
       callback: { proxy, type, event, userInfo in
-        return AccessibilityManager.shared.handleKeyEvent(proxy: proxy, type: type, event: event)
+        return AccessibilityManager.shared.handleKeyEvent(
+          proxy: proxy, type: type, event: event)
       },
       userInfo: nil
     )
 
     guard let eventTap = eventTap else {
-      print("Failed to create event tap")
       return
     }
 
@@ -72,12 +76,18 @@ class AccessibilityManager: ObservableObject {
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
     let flags = event.flags
 
+    // Check if this Ctrl+Arrow event is within the workspace switching threshold - if so, ignore it
+    if let handler = hotkeyHandler, handler.isWithinWorkspaceEventThreshold(),
+      flags.contains(.maskControl) && (keyCode == 123 || keyCode == 124)
+    {
+      return Unmanaged.passUnretained(event)
+    }
+
     // Remap Ctrl+Left/Right and Ctrl+Shift+Left/Right to Option equivalents
     // Check for Control + Left/Right arrow (with or without Shift)
     if flags.contains(.maskControl) && !flags.contains(.maskAlternate)
       && !flags.contains(.maskCommand) && (keyCode == 123 || keyCode == 124)
     {
-
       // Create new event with Option instead of Control (preserve Shift if present)
       let newEvent = event.copy()
       if let newEvent = newEvent {

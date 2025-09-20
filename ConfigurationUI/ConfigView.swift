@@ -135,6 +135,7 @@ struct ConfigView: View {
           configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
           configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
           enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
+          enableChromeOSWorkspaceSwitching: $configManager.enableChromeOSWorkspaceSwitching,
           onSettingsChanged: {
             hotkeyHandler.updateGlobalKeybindings()
             NotificationCenter.default.post(name: NSNotification.Name("ConfigChanged"), object: nil)

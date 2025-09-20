@@ -9,6 +9,7 @@ struct SettingsTabView: View {
   @Binding var configHotkeyUseOptionModifier: Bool
   @Binding var configHotkeyUseShiftModifier: Bool
   @Binding var enableLinuxWordMovementMapping: Bool
+  @Binding var enableChromeOSWorkspaceSwitching: Bool
   let onSettingsChanged: () -> Void
 
   @State private var hasAccessibilityPermission = false
@@ -104,6 +105,19 @@ struct SettingsTabView: View {
               .onChange(of: enableLinuxWordMovementMapping) { _ in onSettingsChanged() }
 
             Text("Maps Ctrl+Left/Right to Option+Left/Right (includes Shift combinations)")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+
+          Divider()
+
+          // ChromeOS workspace switching
+          VStack(alignment: .leading, spacing: 8) {
+            Toggle("Enable ChromeOS workspace switching", isOn: $enableChromeOSWorkspaceSwitching)
+              .disabled(!hasAccessibilityPermission)
+              .onChange(of: enableChromeOSWorkspaceSwitching) { _ in onSettingsChanged() }
+
+            Text("Maps Cmd+[/] to Ctrl+Left/Right for workspace switching")
               .font(.caption)
               .foregroundColor(.secondary)
           }
