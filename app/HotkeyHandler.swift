@@ -96,10 +96,10 @@ class HotkeyHandler: ObservableObject {
   func updateGlobalKeybindings() {
     clearGlobalKeybindings()
     registerAllNumberKeys()
-    if !configManager.configHotkeyKey.isEmpty {
+    if let key = configManager.configHotkey.key, !key.isEmpty {
       registerConfigHotkey()
     }
-    if !configManager.appSwitcherHotkeyKey.isEmpty {
+    if let key = configManager.appSwitcherHotkey.key, !key.isEmpty {
       registerAppSwitcherHotkey()
     }
     updateWorkspaceSwitching()
@@ -253,9 +253,10 @@ class HotkeyHandler: ObservableObject {
     ]
 
     var modifierFlags: UInt32 = 0
-    if configManager.useCmdModifier { modifierFlags |= UInt32(cmdKey) }
-    if configManager.useOptionModifier { modifierFlags |= UInt32(optionKey) }
-    if configManager.useShiftModifier { modifierFlags |= UInt32(shiftKey) }
+    if configManager.globalHotkey.cmd { modifierFlags |= UInt32(cmdKey) }
+    if configManager.globalHotkey.opt { modifierFlags |= UInt32(optionKey) }
+    if configManager.globalHotkey.ctrl { modifierFlags |= UInt32(controlKey) }
+    if configManager.globalHotkey.shift { modifierFlags |= UInt32(shiftKey) }
 
     // If no modifiers are selected, default to Command
     if modifierFlags == 0 { modifierFlags = UInt32(cmdKey) }
@@ -281,13 +282,15 @@ class HotkeyHandler: ObservableObject {
   }
 
   private func registerConfigHotkey() {
-    let keyCode = keyCodeForCharacter(configManager.configHotkeyKey)
+    guard let key = configManager.configHotkey.key else { return }
+    let keyCode = keyCodeForCharacter(key)
     guard keyCode != 0 else { return }
 
     var configModifierFlags: UInt32 = 0
-    if configManager.configHotkeyUseCmdModifier { configModifierFlags |= UInt32(cmdKey) }
-    if configManager.configHotkeyUseOptionModifier { configModifierFlags |= UInt32(optionKey) }
-    if configManager.configHotkeyUseShiftModifier { configModifierFlags |= UInt32(shiftKey) }
+    if configManager.configHotkey.cmd { configModifierFlags |= UInt32(cmdKey) }
+    if configManager.configHotkey.opt { configModifierFlags |= UInt32(optionKey) }
+    if configManager.configHotkey.ctrl { configModifierFlags |= UInt32(controlKey) }
+    if configManager.configHotkey.shift { configModifierFlags |= UInt32(shiftKey) }
 
     // If no modifiers are selected, default to Command
     if configModifierFlags == 0 { configModifierFlags = UInt32(cmdKey) }
@@ -310,13 +313,15 @@ class HotkeyHandler: ObservableObject {
   }
 
   private func registerAppSwitcherHotkey() {
-    let keyCode = keyCodeForCharacter(configManager.appSwitcherHotkeyKey)
+    guard let key = configManager.appSwitcherHotkey.key else { return }
+    let keyCode = keyCodeForCharacter(key)
     guard keyCode != 0 else { return }
 
     var appSwitcherModifierFlags: UInt32 = 0
-    if configManager.appSwitcherUseCmdModifier { appSwitcherModifierFlags |= UInt32(cmdKey) }
-    if configManager.appSwitcherUseOptionModifier { appSwitcherModifierFlags |= UInt32(optionKey) }
-    if configManager.appSwitcherUseShiftModifier { appSwitcherModifierFlags |= UInt32(shiftKey) }
+    if configManager.appSwitcherHotkey.cmd { appSwitcherModifierFlags |= UInt32(cmdKey) }
+    if configManager.appSwitcherHotkey.opt { appSwitcherModifierFlags |= UInt32(optionKey) }
+    if configManager.appSwitcherHotkey.ctrl { appSwitcherModifierFlags |= UInt32(controlKey) }
+    if configManager.appSwitcherHotkey.shift { appSwitcherModifierFlags |= UInt32(shiftKey) }
 
     // If no modifiers are selected, default to Command
     if appSwitcherModifierFlags == 0 { appSwitcherModifierFlags = UInt32(cmdKey) }

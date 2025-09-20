@@ -22,37 +22,13 @@ class ConfigManager: ObservableObject {
   }
 
   // Published properties for real-time updates
-  @Published var useCmdModifier: Bool = true {
+  @Published var globalHotkey: Hotkey = Hotkey(cmd: true) {
     didSet { if !isLoading { saveConfiguration() } }
   }
-  @Published var useOptionModifier: Bool = false {
+  @Published var configHotkey: Hotkey = Hotkey(key: "`", cmd: true, shift: true) {
     didSet { if !isLoading { saveConfiguration() } }
   }
-  @Published var useShiftModifier: Bool = false {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var configHotkeyKey: String = "`" {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var configHotkeyUseCmdModifier: Bool = true {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var configHotkeyUseOptionModifier: Bool = false {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var configHotkeyUseShiftModifier: Bool = true {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var appSwitcherHotkeyKey: String = "`" {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var appSwitcherUseCmdModifier: Bool = true {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var appSwitcherUseOptionModifier: Bool = false {
-    didSet { if !isLoading { saveConfiguration() } }
-  }
-  @Published var appSwitcherUseShiftModifier: Bool = false {
+  @Published var appSwitcherHotkey: Hotkey = Hotkey(key: "`", cmd: true) {
     didSet { if !isLoading { saveConfiguration() } }
   }
   @Published var keyAppBindings: [String: String] = [:] {
@@ -117,17 +93,9 @@ class ConfigManager: ObservableObject {
   private func saveConfigToFile() {
     var lines: [String] = []
 
-    lines.append("use_cmd_modifier=\(useCmdModifier ? "true" : "false")")
-    lines.append("use_option_modifier=\(useOptionModifier ? "true" : "false")")
-    lines.append("use_shift_modifier=\(useShiftModifier ? "true" : "false")")
-    lines.append("config_hotkey_key=\(configHotkeyKey)")
-    lines.append("config_hotkey_use_cmd=\(configHotkeyUseCmdModifier ? "true" : "false")")
-    lines.append("config_hotkey_use_option=\(configHotkeyUseOptionModifier ? "true" : "false")")
-    lines.append("config_hotkey_use_shift=\(configHotkeyUseShiftModifier ? "true" : "false")")
-    lines.append("app_switcher_hotkey_key=\(appSwitcherHotkeyKey)")
-    lines.append("app_switcher_use_cmd=\(appSwitcherUseCmdModifier ? "true" : "false")")
-    lines.append("app_switcher_use_option=\(appSwitcherUseOptionModifier ? "true" : "false")")
-    lines.append("app_switcher_use_shift=\(appSwitcherUseShiftModifier ? "true" : "false")")
+    lines.append("global_hotkey=\(globalHotkey.serialize())")
+    lines.append("config_hotkey=\(configHotkey.serialize())")
+    lines.append("app_switcher_hotkey=\(appSwitcherHotkey.serialize())")
     lines.append(
       "enable_linux_word_movement_mapping=\(enableLinuxWordMovementMapping ? "true" : "false")")
     lines.append(
@@ -148,28 +116,12 @@ class ConfigManager: ObservableObject {
 
   private func parseOption(key: String, value: String) {
     switch key {
-    case "use_cmd_modifier":
-      useCmdModifier = parseBoolValue(value, key: key) ?? true
-    case "use_option_modifier":
-      useOptionModifier = parseBoolValue(value, key: key) ?? false
-    case "use_shift_modifier":
-      useShiftModifier = parseBoolValue(value, key: key) ?? false
-    case "config_hotkey_key":
-      configHotkeyKey = parseHotkeyKey(value, key: key) ?? "`"
-    case "config_hotkey_use_cmd":
-      configHotkeyUseCmdModifier = parseBoolValue(value, key: key) ?? true
-    case "config_hotkey_use_option":
-      configHotkeyUseOptionModifier = parseBoolValue(value, key: key) ?? false
-    case "config_hotkey_use_shift":
-      configHotkeyUseShiftModifier = parseBoolValue(value, key: key) ?? true
-    case "app_switcher_hotkey_key":
-      appSwitcherHotkeyKey = parseHotkeyKey(value, key: key) ?? "`"
-    case "app_switcher_use_cmd":
-      appSwitcherUseCmdModifier = parseBoolValue(value, key: key) ?? true
-    case "app_switcher_use_option":
-      appSwitcherUseOptionModifier = parseBoolValue(value, key: key) ?? false
-    case "app_switcher_use_shift":
-      appSwitcherUseShiftModifier = parseBoolValue(value, key: key) ?? false
+    case "global_hotkey":
+      globalHotkey = Hotkey.deserialize(value) ?? Hotkey(cmd: true)
+    case "config_hotkey":
+      configHotkey = Hotkey.deserialize(value) ?? Hotkey(key: "`", cmd: true, shift: true)
+    case "app_switcher_hotkey":
+      appSwitcherHotkey = Hotkey.deserialize(value) ?? Hotkey(key: "`", cmd: true)
     case "enable_linux_word_movement_mapping":
       enableLinuxWordMovementMapping = parseBoolValue(value, key: key) ?? false
     case "enable_chromeos_workspace_switching":
@@ -190,17 +142,9 @@ class ConfigManager: ObservableObject {
     isLoading = true
 
     // Set defaults
-    useCmdModifier = true
-    useOptionModifier = false
-    useShiftModifier = false
-    configHotkeyKey = "`"
-    configHotkeyUseCmdModifier = true
-    configHotkeyUseOptionModifier = false
-    configHotkeyUseShiftModifier = true
-    appSwitcherHotkeyKey = "`"
-    appSwitcherUseCmdModifier = true
-    appSwitcherUseOptionModifier = false
-    appSwitcherUseShiftModifier = false
+    globalHotkey = Hotkey(cmd: true)
+    configHotkey = Hotkey(key: "`", cmd: true, shift: true)
+    appSwitcherHotkey = Hotkey(key: "`", cmd: true)
     enableLinuxWordMovementMapping = false
     enableChromeOSWorkspaceSwitching = false
     keyAppBindings = [:]
@@ -228,6 +172,7 @@ class ConfigManager: ObservableObject {
   func removeKeyAppBinding(key: String) {
     setKeyAppBinding(key: key, appName: nil)
   }
+
 }
 
 private func parseBoolValue(_ value: String, key: String) -> Bool? {

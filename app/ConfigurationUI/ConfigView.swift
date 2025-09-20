@@ -19,15 +19,14 @@ struct KeybindingRowView: View {
   let keybinding: KeybindingData
   let onAssign: () -> Void
   let onUnassign: () -> Void
-  let useCmdModifier: Bool
-  let useOptionModifier: Bool
-  let useShiftModifier: Bool
+  let globalHotkey: Hotkey
 
   private var modifierText: String {
     var text = ""
-    if useCmdModifier { text += "⌘" }
-    if useOptionModifier { text += "⌥" }
-    if useShiftModifier { text += "⇧" }
+    if globalHotkey.cmd { text += "⌘" }
+    if globalHotkey.opt { text += "⌥" }
+    if globalHotkey.ctrl { text += "⌃" }
+    if globalHotkey.shift { text += "⇧" }
     return text.isEmpty ? "⌘" : text
   }
 
@@ -76,9 +75,7 @@ struct ConfigView: View {
           if selectedTab == 0 {
             AppsTabView(
               keybindings: keybindings,
-              useCmdModifier: configManager.useCmdModifier,
-              useOptionModifier: configManager.useOptionModifier,
-              useShiftModifier: configManager.useShiftModifier,
+              globalHotkey: configManager.globalHotkey,
               onAssign: { key in
                 selectedKey = key
                 showingAssignmentModal = true
@@ -91,17 +88,9 @@ struct ConfigView: View {
             )
           } else {
             SettingsTabView(
-              useCmdModifier: $configManager.useCmdModifier,
-              useOptionModifier: $configManager.useOptionModifier,
-              useShiftModifier: $configManager.useShiftModifier,
-              configHotkeyKey: $configManager.configHotkeyKey,
-              configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
-              configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
-              configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
-              appSwitcherHotkeyKey: $configManager.appSwitcherHotkeyKey,
-              appSwitcherUseCmdModifier: $configManager.appSwitcherUseCmdModifier,
-              appSwitcherUseOptionModifier: $configManager.appSwitcherUseOptionModifier,
-              appSwitcherUseShiftModifier: $configManager.appSwitcherUseShiftModifier,
+              globalHotkey: $configManager.globalHotkey,
+              configHotkey: $configManager.configHotkey,
+              appSwitcherHotkey: $configManager.appSwitcherHotkey,
               enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
               enableChromeOSWorkspaceSwitching: $configManager.enableChromeOSWorkspaceSwitching,
               onSettingsChanged: {

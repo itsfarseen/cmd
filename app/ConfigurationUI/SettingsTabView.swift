@@ -11,17 +11,9 @@ private enum Constants {
 }
 
 struct SettingsTabView: View {
-  @Binding var useCmdModifier: Bool
-  @Binding var useOptionModifier: Bool
-  @Binding var useShiftModifier: Bool
-  @Binding var configHotkeyKey: String
-  @Binding var configHotkeyUseCmdModifier: Bool
-  @Binding var configHotkeyUseOptionModifier: Bool
-  @Binding var configHotkeyUseShiftModifier: Bool
-  @Binding var appSwitcherHotkeyKey: String
-  @Binding var appSwitcherUseCmdModifier: Bool
-  @Binding var appSwitcherUseOptionModifier: Bool
-  @Binding var appSwitcherUseShiftModifier: Bool
+  @Binding var globalHotkey: Hotkey
+  @Binding var configHotkey: Hotkey
+  @Binding var appSwitcherHotkey: Hotkey
   @Binding var enableLinuxWordMovementMapping: Bool
   @Binding var enableChromeOSWorkspaceSwitching: Bool
   let onSettingsChanged: () -> Void
@@ -40,12 +32,22 @@ struct SettingsTabView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         HStack(spacing: Constants.toggleSpacing) {
-          Toggle("Command (⌘)", isOn: $useCmdModifier)
-            .onChange(of: useCmdModifier) { _ in onSettingsChanged() }
-          Toggle("Option (⌥)", isOn: $useOptionModifier)
-            .onChange(of: useOptionModifier) { _ in onSettingsChanged() }
-          Toggle("Shift (⇧)", isOn: $useShiftModifier)
-            .onChange(of: useShiftModifier) { _ in onSettingsChanged() }
+          Toggle("Command (⌘)", isOn: Binding(
+            get: { globalHotkey.cmd },
+            set: { globalHotkey = Hotkey(key: globalHotkey.key, cmd: $0, opt: globalHotkey.opt, ctrl: globalHotkey.ctrl, shift: globalHotkey.shift); onSettingsChanged() }
+          ))
+          Toggle("Option (⌥)", isOn: Binding(
+            get: { globalHotkey.opt },
+            set: { globalHotkey = Hotkey(key: globalHotkey.key, cmd: globalHotkey.cmd, opt: $0, ctrl: globalHotkey.ctrl, shift: globalHotkey.shift); onSettingsChanged() }
+          ))
+          Toggle("Control (⌃)", isOn: Binding(
+            get: { globalHotkey.ctrl },
+            set: { globalHotkey = Hotkey(key: globalHotkey.key, cmd: globalHotkey.cmd, opt: globalHotkey.opt, ctrl: $0, shift: globalHotkey.shift); onSettingsChanged() }
+          ))
+          Toggle("Shift (⇧)", isOn: Binding(
+            get: { globalHotkey.shift },
+            set: { globalHotkey = Hotkey(key: globalHotkey.key, cmd: globalHotkey.cmd, opt: globalHotkey.opt, ctrl: globalHotkey.ctrl, shift: $0); onSettingsChanged() }
+          ))
           Spacer()
         }
         .padding(.leading, Constants.contentLeadingPadding)
@@ -59,16 +61,8 @@ struct SettingsTabView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         HStack {
-          KeybindingCaptureView(
-            keybinding: $configHotkeyKey,
-            useCmdModifier: $configHotkeyUseCmdModifier,
-            useOptionModifier: $configHotkeyUseOptionModifier,
-            useShiftModifier: $configHotkeyUseShiftModifier
-          )
-          .onChange(of: configHotkeyKey) { _ in onSettingsChanged() }
-          .onChange(of: configHotkeyUseCmdModifier) { _ in onSettingsChanged() }
-          .onChange(of: configHotkeyUseOptionModifier) { _ in onSettingsChanged() }
-          .onChange(of: configHotkeyUseShiftModifier) { _ in onSettingsChanged() }
+          KeybindingCaptureView(hotkey: $configHotkey)
+          .onChange(of: configHotkey) { _ in onSettingsChanged() }
           Spacer()
         }
         .padding(.leading, Constants.contentLeadingPadding)
@@ -82,16 +76,8 @@ struct SettingsTabView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         HStack {
-          KeybindingCaptureView(
-            keybinding: $appSwitcherHotkeyKey,
-            useCmdModifier: $appSwitcherUseCmdModifier,
-            useOptionModifier: $appSwitcherUseOptionModifier,
-            useShiftModifier: $appSwitcherUseShiftModifier
-          )
-          .onChange(of: appSwitcherHotkeyKey) { _ in onSettingsChanged() }
-          .onChange(of: appSwitcherUseCmdModifier) { _ in onSettingsChanged() }
-          .onChange(of: appSwitcherUseOptionModifier) { _ in onSettingsChanged() }
-          .onChange(of: appSwitcherUseShiftModifier) { _ in onSettingsChanged() }
+          KeybindingCaptureView(hotkey: $appSwitcherHotkey)
+          .onChange(of: appSwitcherHotkey) { _ in onSettingsChanged() }
           Spacer()
         }
         .padding(.leading, Constants.contentLeadingPadding)

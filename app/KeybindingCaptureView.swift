@@ -2,10 +2,7 @@ import Cocoa
 import SwiftUI
 
 struct KeybindingCaptureView: View {
-  @Binding var keybinding: String
-  @Binding var useCmdModifier: Bool
-  @Binding var useOptionModifier: Bool
-  @Binding var useShiftModifier: Bool
+  @Binding var hotkey: Hotkey
 
   @State private var isCapturing = false
   @State private var displayText = ""
@@ -49,10 +46,7 @@ struct KeybindingCaptureView: View {
     .onAppear {
       updateDisplayText()
     }
-    .onChange(of: keybinding) { _ in updateDisplayText() }
-    .onChange(of: useCmdModifier) { _ in updateDisplayText() }
-    .onChange(of: useOptionModifier) { _ in updateDisplayText() }
-    .onChange(of: useShiftModifier) { _ in updateDisplayText() }
+    .onChange(of: hotkey) { _ in updateDisplayText() }
     .onDisappear {
       stopCapturing()
     }
@@ -90,15 +84,13 @@ struct KeybindingCaptureView: View {
     // Extract modifiers
     let hasCmd = modifierFlags.contains(.command)
     let hasOption = modifierFlags.contains(.option)
+    let hasCtrl = modifierFlags.contains(.control)
     let hasShift = modifierFlags.contains(.shift)
 
     // Convert keyCode to character
     if let keyChar = keyCodeToCharacter(keyCode) {
-      // Update the bindings
-      keybinding = keyChar
-      useCmdModifier = hasCmd
-      useOptionModifier = hasOption
-      useShiftModifier = hasShift
+      // Update the hotkey
+      hotkey = Hotkey(key: keyChar, cmd: hasCmd, opt: hasOption, ctrl: hasCtrl, shift: hasShift)
 
       // Stop capturing
       stopCapturing()
@@ -114,10 +106,7 @@ struct KeybindingCaptureView: View {
   }
 
   private func clearKeybinding() {
-    keybinding = ""
-    useCmdModifier = false
-    useOptionModifier = false
-    useShiftModifier = false
+    hotkey = Hotkey(key: nil, cmd: false, opt: false, ctrl: false, shift: false)
   }
 
   private func isModifierKey(_ keyCode: UInt16) -> Bool {
@@ -135,12 +124,13 @@ struct KeybindingCaptureView: View {
   private func updateDisplayText() {
     var components: [String] = []
 
-    if useCmdModifier { components.append("⌘") }
-    if useOptionModifier { components.append("⌥") }
-    if useShiftModifier { components.append("⇧") }
+    if hotkey.cmd { components.append("⌘") }
+    if hotkey.opt { components.append("⌥") }
+    if hotkey.ctrl { components.append("⌃") }
+    if hotkey.shift { components.append("⇧") }
 
-    if !keybinding.isEmpty {
-      components.append(keybinding.uppercased())
+    if let key = hotkey.key, !key.isEmpty {
+      components.append(key.uppercased())
     }
 
     displayText = components.joined()

@@ -12,6 +12,7 @@ let package = Package(
       path: "app",
       sources: [
         "main.swift",
+        "Hotkey.swift",
         "HotkeyHandler.swift",
         "AppDelegate.swift",
         "AppDiscovery.swift",

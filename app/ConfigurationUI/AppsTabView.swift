@@ -6,9 +6,7 @@ private enum Constants {
 
 struct AppsTabView: View {
   let keybindings: [KeybindingData]
-  let useCmdModifier: Bool
-  let useOptionModifier: Bool
-  let useShiftModifier: Bool
+  let globalHotkey: Hotkey
   let onAssign: (String) -> Void
   let onUnassign: (String) -> Void
 
@@ -23,9 +21,7 @@ struct AppsTabView: View {
           onUnassign: {
             onUnassign(keybinding.key)
           },
-          useCmdModifier: useCmdModifier,
-          useOptionModifier: useOptionModifier,
-          useShiftModifier: useShiftModifier
+          globalHotkey: globalHotkey
         )
       }
     }
