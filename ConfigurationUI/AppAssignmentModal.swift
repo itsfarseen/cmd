@@ -55,30 +55,15 @@ struct AppAssignmentModal: View {
         VStack(spacing: 4) {
           let appsToShow = selectedTab == 0 ? runningApps : installedApps
           ForEach(appsToShow) { app in
-            Button(action: {
-              onSelectApp(app.name)
-            }) {
-              HStack(spacing: 12) {
-                if let icon = app.icon {
-                  Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 32, height: 32)
-                } else {
-                  RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 32, height: 32)
-                }
-
-                Text(app.name)
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                  .foregroundColor(.primary)
+            AppRowView(
+              appName: app.name,
+              appIcon: app.icon,
+              shortcut: nil as String?,
+              isAssigned: true,
+              onTap: {
+                onSelectApp(app.name)
               }
-              .padding(.vertical, 8)
-              .padding(.horizontal, 12)
-              .background(Color(NSColor.controlBackgroundColor))
-              .cornerRadius(6)
-            }
-            .buttonStyle(PlainButtonStyle())
+            )
           }
         }
       }

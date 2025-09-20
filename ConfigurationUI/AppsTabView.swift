@@ -10,13 +10,8 @@ struct AppsTabView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      Text("Assign apps to keyboard shortcuts")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-
       ScrollView {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
           ForEach(keybindings) { keybinding in
             KeybindingRowView(
               keybinding: keybinding,

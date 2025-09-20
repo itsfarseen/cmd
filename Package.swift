@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
   name: "AppSwitcher",
   platforms: [
-    .macOS(.v11)
+    .macOS(.v12)
   ],
   targets: [
     .executableTarget(
@@ -22,6 +22,7 @@ let package = Package(
         "ConfigurationUI/AppsTabView.swift",
         "ConfigurationUI/SettingsTabView.swift",
         "ConfigurationUI/AppAssignmentModal.swift",
+        "ConfigurationUI/AppRowView.swift",
       ]
     )
   ]

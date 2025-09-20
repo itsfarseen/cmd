@@ -16,7 +16,7 @@ struct SettingsTabView: View {
   private let accessibilityManager = AccessibilityManager.shared
 
   var body: some View {
-    VStack(spacing: 20) {
+    VStack(spacing: 16) {
       VStack(spacing: 16) {
         Text("App Switching Modifier Keys")
           .font(.headline)
