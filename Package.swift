@@ -10,6 +10,15 @@ let package = Package(
     .executableTarget(
       name: "CmdN",
       path: ".",
+      exclude: [
+        "dist",
+        ".build",
+        "icons",
+        "build.py",
+        "generate-plist.sh",
+        "setup-dmg.sh",
+        "Makefile"
+      ],
       sources: [
         "main.swift",
         "HotkeyHandler.swift",
