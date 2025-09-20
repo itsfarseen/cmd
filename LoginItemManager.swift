@@ -1,5 +1,5 @@
-import Foundation
 import Cocoa
+import Foundation
 
 class LoginItemManager: ObservableObject {
   static let shared = LoginItemManager()
@@ -19,21 +19,29 @@ class LoginItemManager: ObservableObject {
 
     // Check if we're in a valid location
     guard currentPath.hasPrefix(systemApps) || currentPath.hasPrefix(userApps) else {
-      return .invalidLocation(message: "App must be installed in Applications folder to enable login at startup")
+      return .invalidLocation(
+        message: "App must be installed in Applications folder to enable login at startup")
     }
 
     // Check for duplicates
-    let bundleId = Bundle.main.bundleIdentifier!
+    guard let bundleId = Bundle.main.bundleIdentifier else {
+      return .invalidLocation(message: "App bundle identifier not configured")
+    }
     if let otherURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId),
-       otherURL.path != currentPath {
-      return .duplicateInstallation(message: "Multiple app copies detected. Remove duplicate from other Applications folder.")
+      otherURL.path != currentPath
+    {
+      return .duplicateInstallation(
+        message: "Multiple app copies detected. Remove duplicate from other Applications folder.")
     }
 
     return .valid
   }
 
   func isLoginItemEnabled() -> Bool {
-    let bundleId = Bundle.main.bundleIdentifier!
+    guard let bundleId = Bundle.main.bundleIdentifier else {
+      print("Warning: Bundle identifier not found")
+      return false
+    }
     let plistPath = NSHomeDirectory() + "/Library/LaunchAgents/\(bundleId).plist"
     return FileManager.default.fileExists(atPath: plistPath)
   }
@@ -44,7 +52,10 @@ class LoginItemManager: ObservableObject {
       return false
     }
 
-    let bundleId = Bundle.main.bundleIdentifier!
+    guard let bundleId = Bundle.main.bundleIdentifier else {
+      print("Error: Bundle identifier not found")
+      return false
+    }
     let launchAgentsDir = NSHomeDirectory() + "/Library/LaunchAgents"
     let plistPath = "\(launchAgentsDir)/\(bundleId).plist"
 
@@ -56,11 +67,19 @@ class LoginItemManager: ObservableObject {
   }
 
   private func createLoginItem(at plistPath: String) -> Bool {
+    guard let bundleId = Bundle.main.bundleIdentifier,
+      let executableName = Bundle.main.object(forInfoDictionaryKey: "CFBundleExecutable") as? String
+    else {
+      print("Error: Bundle not properly configured for login item")
+      return false
+    }
+
     let currentPath = Bundle.main.bundlePath
 
     // Ensure LaunchAgents directory exists
     let launchAgentsDir = URL(fileURLWithPath: plistPath).deletingLastPathComponent().path
-    try? FileManager.default.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
+    try? FileManager.default.createDirectory(
+      atPath: launchAgentsDir, withIntermediateDirectories: true)
 
     let plistContent = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -68,10 +87,10 @@ class LoginItemManager: ObservableObject {
       <plist version="1.0">
       <dict>
         <key>Label</key>
-        <string>\(Bundle.main.bundleIdentifier!)</string>
+        <string>\(bundleId)</string>
         <key>ProgramArguments</key>
         <array>
-          <string>\(currentPath)/Contents/MacOS/\(Bundle.main.object(forInfoDictionaryKey: "CFBundleExecutable") as! String)</string>
+          <string>\(currentPath)/Contents/MacOS/\(executableName)</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
