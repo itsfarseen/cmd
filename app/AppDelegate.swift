@@ -1,6 +1,17 @@
 import Cocoa
 import SwiftUI
 
+class ConfigWindow: NSWindow {
+  override func keyDown(with event: NSEvent) {
+    // Handle Cmd+W to close window
+    if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "w" {
+      performClose(nil)
+      return
+    }
+    super.keyDown(with: event)
+  }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
   var statusItem: NSStatusItem?
   private var configWindow: NSWindow?
@@ -90,7 +101,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     let hostingController = NSHostingController(rootView: contentView)
 
-    let window = NSWindow(
+    let window = ConfigWindow(
       contentRect: NSRect(x: 0, y: 0, width: 650, height: 550),
       styleMask: [.titled, .closable, .resizable],
       backing: .buffered,
