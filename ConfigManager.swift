@@ -1,7 +1,9 @@
 import Foundation
 import SwiftUI
 
-class RawConfig {
+class ConfigManager: ObservableObject {
+  static let shared = ConfigManager()
+
   private let configFileName = "config"
   private let appName = "cmdn"
 
@@ -18,117 +20,6 @@ class RawConfig {
   private var configFilePath: String {
     return "\(configDirectoryPath)/\(configFileName)"
   }
-
-  private var cache: [String: String] = [:]
-  private var isLoaded = false
-
-  init() {
-    createConfigDirectoryIfNeeded()
-  }
-
-  private func createConfigDirectoryIfNeeded() {
-    let fileManager = FileManager.default
-    if !fileManager.fileExists(atPath: configDirectoryPath) {
-      try? fileManager.createDirectory(
-        atPath: configDirectoryPath, withIntermediateDirectories: true, attributes: nil)
-    }
-  }
-
-  private func ensureLoaded() {
-    if !isLoaded {
-      cache = loadFromFile()
-      isLoaded = true
-    }
-  }
-
-  private func loadFromFile() -> [String: String] {
-    guard let data = try? Data(contentsOf: URL(fileURLWithPath: configFilePath)),
-      let content = String(data: data, encoding: .utf8)
-    else {
-      return [:]
-    }
-
-    var config: [String: String] = [:]
-
-    for line in content.components(separatedBy: .newlines) {
-      let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
-
-      // Skip empty lines and comments
-      if trimmedLine.isEmpty || trimmedLine.hasPrefix("#") {
-        continue
-      }
-
-      // Parse key=value pairs
-      if let equalIndex = trimmedLine.firstIndex(of: "=") {
-        let key = String(trimmedLine[..<equalIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-        let value = String(trimmedLine[trimmedLine.index(after: equalIndex)...]).trimmingCharacters(
-          in: .whitespacesAndNewlines)
-
-        if !key.isEmpty {
-          config[key] = value
-        }
-      }
-    }
-
-    return config
-  }
-
-  func getString(key: String, default defaultValue: String = "") -> String {
-    ensureLoaded()
-    return cache[key] ?? defaultValue
-  }
-
-  func getBool(key: String, default defaultValue: Bool = false) -> Bool {
-    ensureLoaded()
-    guard let stringValue = cache[key] else { return defaultValue }
-    return stringValue.lowercased() == "true"
-  }
-
-  func setValue(_ value: String, forKey key: String) {
-    ensureLoaded()
-    cache[key] = value
-  }
-
-  func setBool(_ value: Bool, forKey key: String) {
-    ensureLoaded()
-    cache[key] = value ? "true" : "false"
-  }
-
-  func removeValue(forKey key: String) {
-    ensureLoaded()
-    cache.removeValue(forKey: key)
-  }
-
-  func getKeysWithPrefix(_ prefix: String) -> [String: String] {
-    ensureLoaded()
-    var result: [String: String] = [:]
-    for (key, value) in cache {
-      if key.hasPrefix(prefix) {
-        let shortKey = String(key.dropFirst(prefix.count))
-        result[shortKey] = value
-      }
-    }
-    return result
-  }
-
-  func save() {
-    let sortedKeys = cache.keys.sorted()
-    let content = sortedKeys.map { key in
-      "\(key)=\(cache[key] ?? "")"
-    }.joined(separator: "\n")
-
-    do {
-      try content.write(toFile: configFilePath, atomically: true, encoding: .utf8)
-    } catch {
-      print("Failed to save config: \(error)")
-    }
-  }
-}
-
-class ConfigManager: ObservableObject {
-  static let shared = ConfigManager()
-
-  private let rawConfig = RawConfig()
 
   // Published properties for real-time updates
   @Published var useCmdModifier: Bool = true {
@@ -162,63 +53,130 @@ class ConfigManager: ObservableObject {
   private var isLoading = false
 
   private init() {
+    createConfigDirectoryIfNeeded()
     loadConfigurationFromDisk()
   }
 
   // MARK: - Private Implementation
 
+  private func createConfigDirectoryIfNeeded() {
+    let fileManager = FileManager.default
+    if !fileManager.fileExists(atPath: configDirectoryPath) {
+      try? fileManager.createDirectory(
+        atPath: configDirectoryPath, withIntermediateDirectories: true, attributes: nil)
+    }
+  }
+
+  private func loadConfigFromFile() {
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: configFilePath)),
+      let content = String(data: data, encoding: .utf8)
+    else {
+      return
+    }
+
+    let lines = content.components(separatedBy: .newlines)
+    var index = 0
+
+    while index < lines.count {
+      let trimmedLine = lines[index].trimmingCharacters(in: .whitespacesAndNewlines)
+
+      if trimmedLine.isEmpty || trimmedLine.hasPrefix("#") {
+        index += 1
+        continue
+      }
+
+      if let equalIndex = trimmedLine.firstIndex(of: "=") {
+        let key = String(trimmedLine[..<equalIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = String(trimmedLine[trimmedLine.index(after: equalIndex)...]).trimmingCharacters(
+          in: .whitespacesAndNewlines)
+
+        if !key.isEmpty {
+          parseOption(key: key, value: value)
+        }
+      }
+
+      index += 1
+    }
+  }
+
+  private func saveConfigToFile() {
+    var lines: [String] = []
+
+    lines.append("use_cmd_modifier=\(useCmdModifier ? "true" : "false")")
+    lines.append("use_option_modifier=\(useOptionModifier ? "true" : "false")")
+    lines.append("use_shift_modifier=\(useShiftModifier ? "true" : "false")")
+    lines.append("config_hotkey_key=\(configHotkeyKey)")
+    lines.append("config_hotkey_use_cmd=\(configHotkeyUseCmdModifier ? "true" : "false")")
+    lines.append("config_hotkey_use_option=\(configHotkeyUseOptionModifier ? "true" : "false")")
+    lines.append("config_hotkey_use_shift=\(configHotkeyUseShiftModifier ? "true" : "false")")
+    lines.append(
+      "enable_linux_word_movement_mapping=\(enableLinuxWordMovementMapping ? "true" : "false")")
+
+    for (key, appName) in keyAppBindings.sorted(by: { $0.key < $1.key }) {
+      lines.append("keybinding.\(key)=\(appName)")
+    }
+
+    let content = lines.joined(separator: "\n")
+
+    do {
+      try content.write(toFile: configFilePath, atomically: true, encoding: .utf8)
+    } catch {
+      print("Failed to save config: \(error)")
+    }
+  }
+
+  private func parseOption(key: String, value: String) {
+    switch key {
+    case "use_cmd_modifier":
+      useCmdModifier = parseBoolValue(value, key: key) ?? true
+    case "use_option_modifier":
+      useOptionModifier = parseBoolValue(value, key: key) ?? false
+    case "use_shift_modifier":
+      useShiftModifier = parseBoolValue(value, key: key) ?? false
+    case "config_hotkey_key":
+      configHotkeyKey = parseHotkeyKey(value, key: key) ?? ","
+    case "config_hotkey_use_cmd":
+      configHotkeyUseCmdModifier = parseBoolValue(value, key: key) ?? true
+    case "config_hotkey_use_option":
+      configHotkeyUseOptionModifier = parseBoolValue(value, key: key) ?? false
+    case "config_hotkey_use_shift":
+      configHotkeyUseShiftModifier = parseBoolValue(value, key: key) ?? false
+    case "enable_linux_word_movement_mapping":
+      enableLinuxWordMovementMapping = parseBoolValue(value, key: key) ?? false
+    default:
+      if key.hasPrefix("keybinding.") {
+        let shortKey = String(key.dropFirst("keybinding.".count))
+        if let (validKey, validAppName) = parseKeybinding(key: shortKey, appName: value) {
+          keyAppBindings[validKey] = validAppName
+        }
+      } else {
+        fputs("Warning: Unknown configuration option '\(key)', ignoring\n", stderr)
+      }
+    }
+  }
+
   private func loadConfigurationFromDisk() {
     isLoading = true
 
-    // Load modifier settings
-    useCmdModifier = rawConfig.getBool(key: "use_cmd_modifier", default: true)
-    useOptionModifier = rawConfig.getBool(key: "use_option_modifier", default: false)
-    useShiftModifier = rawConfig.getBool(key: "use_shift_modifier", default: false)
+    // Set defaults
+    useCmdModifier = true
+    useOptionModifier = false
+    useShiftModifier = false
+    configHotkeyKey = ","
+    configHotkeyUseCmdModifier = true
+    configHotkeyUseOptionModifier = false
+    configHotkeyUseShiftModifier = false
+    enableLinuxWordMovementMapping = false
+    keyAppBindings = [:]
 
-    // Load config hotkey settings
-    configHotkeyKey = rawConfig.getString(key: "config_hotkey_key", default: ",")
-    configHotkeyUseCmdModifier = rawConfig.getBool(key: "config_hotkey_use_cmd", default: true)
-    configHotkeyUseOptionModifier = rawConfig.getBool(
-      key: "config_hotkey_use_option", default: false)
-    configHotkeyUseShiftModifier = rawConfig.getBool(key: "config_hotkey_use_shift", default: false)
-
-    // Load key-app bindings
-    keyAppBindings = rawConfig.getKeysWithPrefix("keybinding.")
-
-    // Load accessibility settings
-    enableLinuxWordMovementMapping = rawConfig.getBool(
-      key: "enable_linux_word_movement_mapping", default: false)
+    // Load from file
+    loadConfigFromFile()
 
     isLoading = false
   }
 
   private func saveConfiguration() {
-    // Save modifier settings
-    rawConfig.setBool(useCmdModifier, forKey: "use_cmd_modifier")
-    rawConfig.setBool(useOptionModifier, forKey: "use_option_modifier")
-    rawConfig.setBool(useShiftModifier, forKey: "use_shift_modifier")
-
-    // Save config hotkey settings
-    rawConfig.setValue(configHotkeyKey, forKey: "config_hotkey_key")
-    rawConfig.setBool(configHotkeyUseCmdModifier, forKey: "config_hotkey_use_cmd")
-    rawConfig.setBool(configHotkeyUseOptionModifier, forKey: "config_hotkey_use_option")
-    rawConfig.setBool(configHotkeyUseShiftModifier, forKey: "config_hotkey_use_shift")
-
-    // Clear existing keybindings
-    let existingBindings = rawConfig.getKeysWithPrefix("keybinding.")
-    for key in existingBindings.keys {
-      rawConfig.removeValue(forKey: "keybinding.\(key)")
-    }
-
-    // Save new key-app bindings
-    for (key, appName) in keyAppBindings {
-      rawConfig.setValue(appName, forKey: "keybinding.\(key)")
-    }
-
-    // Save accessibility settings
-    rawConfig.setBool(enableLinuxWordMovementMapping, forKey: "enable_linux_word_movement_mapping")
-
-    rawConfig.save()
+    saveConfigToFile()
   }
 
   // MARK: - Public API
@@ -233,5 +191,37 @@ class ConfigManager: ObservableObject {
 
   func removeKeyAppBinding(key: String) {
     setKeyAppBinding(key: key, appName: nil)
+  }
+}
+
+private func parseBoolValue(_ value: String, key: String) -> Bool? {
+  let lowercased = value.lowercased()
+  if lowercased == "true" || lowercased == "false" {
+    return lowercased == "true"
+  } else {
+    fputs("Warning: Invalid boolean value '\(value)' for \(key)\n", stderr)
+    return nil
+  }
+}
+
+private func parseHotkeyKey(_ key: String, key keyName: String) -> String? {
+  if key.count == 1
+    && key.rangeOfCharacter(from: .alphanumerics.union(.punctuationCharacters)) != nil
+  {
+    return key
+  } else {
+    fputs("Warning: Invalid hotkey key '\(key)' for \(keyName)\n", stderr)
+    return nil
+  }
+}
+
+private func parseKeybinding(key: String, appName: String) -> (String, String)? {
+  if key.count == 1 && key.rangeOfCharacter(from: .alphanumerics) != nil
+    && !appName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  {
+    return (key, appName)
+  } else {
+    fputs("Warning: Invalid keybinding '\(key)=\(appName)'\n", stderr)
+    return nil
   }
 }
