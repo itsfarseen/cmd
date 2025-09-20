@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-  name: "AppSwitcher",
+  name: "CmdN",
   platforms: [
     .macOS(.v12)
   ],
   targets: [
     .executableTarget(
-      name: "AppSwitcher",
+      name: "CmdN",
       path: ".",
       sources: [
         "main.swift",

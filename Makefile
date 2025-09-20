@@ -1,8 +1,8 @@
-TARGET = AppSwitcher
+TARGET = CmdN
 BUILD_DIR = .build/debug
 RELEASE_BUILD_DIR = .build/release
 DIST_DIR = dist
-APP_NAME = $(DIST_DIR)/AppSwitcher.app
+APP_NAME = $(DIST_DIR)/CmdN.app
 
 all:
 	swift build
@@ -24,9 +24,9 @@ build-app:
 	@echo '	<key>CFBundleExecutable</key>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<string>$(TARGET)</string>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<key>CFBundleIdentifier</key>' >> $(APP_NAME)/Contents/Info.plist
-	@echo '	<string>com.example.appswitcher</string>' >> $(APP_NAME)/Contents/Info.plist
+	@echo '	<string>itsfarseen.cmdn</string>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<key>CFBundleName</key>' >> $(APP_NAME)/Contents/Info.plist
-	@echo '	<string>App Switcher</string>' >> $(APP_NAME)/Contents/Info.plist
+	@echo '	<string>CmdN</string>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<key>CFBundleVersion</key>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<string>1.0</string>' >> $(APP_NAME)/Contents/Info.plist
 	@echo '	<key>CFBundleShortVersionString</key>' >> $(APP_NAME)/Contents/Info.plist
@@ -48,11 +48,11 @@ install:
 install-app:
 	$(MAKE) build-app
 	cp -r $(APP_NAME) /Applications/
-	@echo "App installed to /Applications/AppSwitcher.app"
+	@echo "App installed to /Applications/CmdN.app"
 
 package-zip:
 	$(MAKE) build-app
-	cd $(DIST_DIR) && zip -r ../$(TARGET).zip AppSwitcher.app
+	cd $(DIST_DIR) && zip -r ../$(TARGET).zip CmdN.app
 	@echo "Created downloadable ZIP: $(TARGET).zip"
 
 package-dmg:
