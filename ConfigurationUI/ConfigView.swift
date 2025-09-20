@@ -1,5 +1,12 @@
 import SwiftUI
 
+private enum Constants {
+  static let windowWidth: CGFloat = 600
+  static let windowHeight: CGFloat = 500
+  static let contentHorizontalPadding: CGFloat = 20
+  static let iconSize = NSSize(width: 32, height: 32)
+}
+
 struct KeybindingData: Identifiable {
   let id = UUID()
   let key: String
@@ -61,86 +68,53 @@ struct ConfigView: View {
   var body: some View {
     VStack(spacing: 0) {
       // Header section
-      VStack(spacing: 16) {
-        Text("App Switcher Configuration")
-          .font(.largeTitle)
-          .fontWeight(.bold)
-          .multilineTextAlignment(.center)
+      ConfigHeader(selectedTab: $selectedTab)
 
-        Text("Assign apps to keyboard shortcuts and configure settings")
-          .font(.subheadline)
-          .foregroundColor(.secondary)
-          .multilineTextAlignment(.center)
-
-        // Tab picker
-        Picker("", selection: $selectedTab) {
-          Text("Apps").tag(0)
-          Text("Settings").tag(1)
+      // Tab content with shared scroll view
+      ScrollView {
+        Group {
+          if selectedTab == 0 {
+            AppsTabView(
+              keybindings: keybindings,
+              useCmdModifier: configManager.useCmdModifier,
+              useOptionModifier: configManager.useOptionModifier,
+              useShiftModifier: configManager.useShiftModifier,
+              onAssign: { key in
+                selectedKey = key
+                showingAssignmentModal = true
+              },
+              onUnassign: { key in
+                configManager.removeKeyAppBinding(key: key)
+                hotkeyHandler.updateGlobalKeybindings()
+                refreshKeybindingDisplay()
+              }
+            )
+          } else {
+            SettingsTabView(
+              useCmdModifier: $configManager.useCmdModifier,
+              useOptionModifier: $configManager.useOptionModifier,
+              useShiftModifier: $configManager.useShiftModifier,
+              configHotkeyKey: $configManager.configHotkeyKey,
+              configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
+              configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
+              configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
+              enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
+              enableChromeOSWorkspaceSwitching: $configManager.enableChromeOSWorkspaceSwitching,
+              onSettingsChanged: {
+                hotkeyHandler.updateGlobalKeybindings()
+                NotificationCenter.default.post(
+                  name: NSNotification.Name("ConfigChanged"), object: nil)
+              }
+            )
+          }
         }
-        .pickerStyle(SegmentedPickerStyle())
-        .frame(width: 240)
+        .padding(.horizontal, Constants.contentHorizontalPadding)
       }
-      .padding(.top, 24)
-      .padding(.bottom, 20)
-      .frame(maxWidth: .infinity)
 
-      // Tab content with fixed frame to prevent header movement
-      Group {
-        if selectedTab == 0 {
-          AppsTabView(
-            keybindings: keybindings,
-            useCmdModifier: configManager.useCmdModifier,
-            useOptionModifier: configManager.useOptionModifier,
-            useShiftModifier: configManager.useShiftModifier,
-            onAssign: { key in
-              selectedKey = key
-              showingAssignmentModal = true
-            },
-            onUnassign: { key in
-              configManager.removeKeyAppBinding(key: key)
-              hotkeyHandler.updateGlobalKeybindings()
-              refreshKeybindingDisplay()
-            }
-          )
-        } else {
-          SettingsTabView(
-            useCmdModifier: $configManager.useCmdModifier,
-            useOptionModifier: $configManager.useOptionModifier,
-            useShiftModifier: $configManager.useShiftModifier,
-            configHotkeyKey: $configManager.configHotkeyKey,
-            configHotkeyUseCmdModifier: $configManager.configHotkeyUseCmdModifier,
-            configHotkeyUseOptionModifier: $configManager.configHotkeyUseOptionModifier,
-            configHotkeyUseShiftModifier: $configManager.configHotkeyUseShiftModifier,
-            enableLinuxWordMovementMapping: $configManager.enableLinuxWordMovementMapping,
-            enableChromeOSWorkspaceSwitching: $configManager.enableChromeOSWorkspaceSwitching,
-            onSettingsChanged: {
-              hotkeyHandler.updateGlobalKeybindings()
-              NotificationCenter.default.post(
-                name: NSNotification.Name("ConfigChanged"), object: nil)
-            }
-          )
-        }
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-      .padding(.horizontal, 20)
-
-      Divider()
-        .padding(.horizontal, 20)
-
-      // Footer with Done button
-      HStack {
-        Spacer()
-        Button("Done") {
-          onDismiss()
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .keyboardShortcut(.defaultAction)
-      }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      // Footer
+      ConfigFooter(onDismiss: onDismiss)
     }
-    .frame(width: 700, height: 580)
+    .frame(width: Constants.windowWidth, height: Constants.windowHeight)
     .background(Color(NSColor.windowBackgroundColor))
     .onAppear {
       loadData()
@@ -239,7 +213,7 @@ struct ConfigView: View {
         if appIcon == nil, let bundleURL = app.bundleURL {
           appIcon = workspace.icon(forFile: bundleURL.path)
         }
-        appIcon?.size = NSSize(width: 32, height: 32)
+        appIcon?.size = Constants.iconSize
         return appIcon
       }
     }

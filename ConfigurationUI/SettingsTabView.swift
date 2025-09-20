@@ -1,5 +1,15 @@
 import SwiftUI
 
+private enum Constants {
+  static let sectionSpacing: CGFloat = 16
+  static let contentSpacing: CGFloat = 16
+  static let toggleSpacing: CGFloat = 20
+  static let contentLeadingPadding: CGFloat = 8
+  static let accessibilitySpacing: CGFloat = 12
+  static let errorSpacing: CGFloat = 8
+  static let delayTime: Double = 0.5
+}
+
 struct SettingsTabView: View {
   @Binding var useCmdModifier: Bool
   @Binding var useOptionModifier: Bool
@@ -19,13 +29,13 @@ struct SettingsTabView: View {
   private let loginItemManager = LoginItemManager.shared
 
   var body: some View {
-    VStack(spacing: 16) {
-      VStack(spacing: 16) {
+    VStack(spacing: Constants.sectionSpacing) {
+      VStack(spacing: Constants.contentSpacing) {
         Text("App Switching Modifier Keys")
           .font(.headline)
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        HStack(spacing: 20) {
+        HStack(spacing: Constants.toggleSpacing) {
           Toggle("Command (⌘)", isOn: $useCmdModifier)
             .onChange(of: useCmdModifier) { _ in onSettingsChanged() }
           Toggle("Option (⌥)", isOn: $useOptionModifier)
@@ -34,12 +44,12 @@ struct SettingsTabView: View {
             .onChange(of: useShiftModifier) { _ in onSettingsChanged() }
           Spacer()
         }
-        .padding(.leading, 20)
+        .padding(.leading, Constants.contentLeadingPadding)
       }
 
       Divider()
 
-      VStack(spacing: 16) {
+      VStack(spacing: Constants.contentSpacing) {
         Text("Quick Config Access")
           .font(.headline)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -57,46 +67,55 @@ struct SettingsTabView: View {
           .onChange(of: configHotkeyUseShiftModifier) { _ in onSettingsChanged() }
           Spacer()
         }
-        .padding(.leading, 20)
+        .padding(.leading, Constants.contentLeadingPadding)
       }
 
       Divider()
 
-      VStack(spacing: 16) {
+      VStack(spacing: Constants.contentSpacing) {
         Text("Startup")
           .font(.headline)
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        VStack(alignment: .leading, spacing: 8) {
+        HStack {
           Toggle("Start at login", isOn: $loginItemEnabled)
             .disabled(!isLoginItemToggleEnabled)
             .onChange(of: loginItemEnabled) { newValue in
               handleLoginItemToggle(newValue)
             }
+          Spacer()
+        }
+        .padding(.leading, Constants.contentLeadingPadding)
 
-          if case .invalidLocation(let message) = loginItemValidation {
+        if case .invalidLocation(let message) = loginItemValidation {
+          HStack {
             Text(message)
               .font(.caption)
               .foregroundColor(.orange)
+            Spacer()
           }
+          .padding(.leading, Constants.contentLeadingPadding)
+        }
 
-          if case .duplicateInstallation(let message) = loginItemValidation {
+        if case .duplicateInstallation(let message) = loginItemValidation {
+          HStack {
             Text("⚠️ \(message)")
               .font(.caption)
               .foregroundColor(.red)
+            Spacer()
           }
+          .padding(.leading, Constants.contentLeadingPadding)
         }
-        .padding(.leading, 20)
       }
 
       Divider()
 
-      VStack(spacing: 16) {
-        Text("Accessibility Features")
+      VStack(spacing: Constants.contentSpacing) {
+        Text("Other goodies")
           .font(.headline)
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Constants.accessibilitySpacing) {
           // Accessibility permission status
           HStack {
             Image(
@@ -131,7 +150,7 @@ struct SettingsTabView: View {
           Divider()
 
           // Linux word movement mapping
-          VStack(alignment: .leading, spacing: 8) {
+          VStack(alignment: .leading, spacing: Constants.errorSpacing) {
             Toggle("Enable Linux-style word movement", isOn: $enableLinuxWordMovementMapping)
               .disabled(!hasAccessibilityPermission)
               .onChange(of: enableLinuxWordMovementMapping) { _ in onSettingsChanged() }
@@ -144,7 +163,7 @@ struct SettingsTabView: View {
           Divider()
 
           // ChromeOS workspace switching
-          VStack(alignment: .leading, spacing: 8) {
+          VStack(alignment: .leading, spacing: Constants.errorSpacing) {
             Toggle("Enable ChromeOS workspace switching", isOn: $enableChromeOSWorkspaceSwitching)
               .disabled(!hasAccessibilityPermission)
               .onChange(of: enableChromeOSWorkspaceSwitching) { _ in onSettingsChanged() }
@@ -154,12 +173,11 @@ struct SettingsTabView: View {
               .foregroundColor(.secondary)
           }
         }
-        .padding(.leading, 20)
+        .padding(.leading, Constants.contentLeadingPadding)
       }
 
       Spacer()
     }
-    .frame(maxHeight: 500)
     .onAppear {
       checkAccessibilityPermission()
       checkLoginItemStatus()
@@ -173,7 +191,7 @@ struct SettingsTabView: View {
   private func requestAccessibilityPermission() {
     _ = accessibilityManager.requestAccessibilityPermission()
     // Check again after a short delay to update UI
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + Constants.delayTime) {
       checkAccessibilityPermission()
     }
   }

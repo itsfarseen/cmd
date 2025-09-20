@@ -1,5 +1,9 @@
 import SwiftUI
 
+private enum Constants {
+  static let keybindingSpacing: CGFloat = 4
+}
+
 struct AppsTabView: View {
   let keybindings: [KeybindingData]
   let useCmdModifier: Bool
@@ -9,27 +13,21 @@ struct AppsTabView: View {
   let onUnassign: (String) -> Void
 
   var body: some View {
-    VStack(spacing: 16) {
-      ScrollView {
-        VStack(spacing: 4) {
-          ForEach(keybindings) { keybinding in
-            KeybindingRowView(
-              keybinding: keybinding,
-              onAssign: {
-                onAssign(keybinding.key)
-              },
-              onUnassign: {
-                onUnassign(keybinding.key)
-              },
-              useCmdModifier: useCmdModifier,
-              useOptionModifier: useOptionModifier,
-              useShiftModifier: useShiftModifier
-            )
-          }
-        }
-        .padding(.horizontal)
+    VStack(spacing: Constants.keybindingSpacing) {
+      ForEach(keybindings) { keybinding in
+        KeybindingRowView(
+          keybinding: keybinding,
+          onAssign: {
+            onAssign(keybinding.key)
+          },
+          onUnassign: {
+            onUnassign(keybinding.key)
+          },
+          useCmdModifier: useCmdModifier,
+          useOptionModifier: useOptionModifier,
+          useShiftModifier: useShiftModifier
+        )
       }
-      .frame(maxHeight: 400)
     }
   }
 }

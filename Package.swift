@@ -20,6 +20,8 @@ let package = Package(
         "AccessibilityManager.swift",
         "LoginItemManager.swift",
         "ConfigurationUI/ConfigView.swift",
+        "ConfigurationUI/ConfigHeader.swift",
+        "ConfigurationUI/ConfigFooter.swift",
         "ConfigurationUI/AppsTabView.swift",
         "ConfigurationUI/SettingsTabView.swift",
         "ConfigurationUI/AppAssignmentModal.swift",
