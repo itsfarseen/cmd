@@ -1,4 +1,6 @@
-# <img src="icons/cmdn.png" alt="CmdN" width="64" height="64"> CmdN
+<img src="icons/cmdn.png" alt="CmdN" width="64"> 
+
+# CmdN
 
 **A lightweight i3-style application switcher for macOS that preserves your native workflow**
 
