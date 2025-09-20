@@ -123,7 +123,7 @@ def calculate_icon_positions(window_width, window_height, icon_size, num_items=2
     positions = []
     for i in range(num_items):
         x = 20 + space_unit + (i * (icon_size + space_unit)) + (icon_size // 2)
-        y = center_y
+        y = center_y - (icon_size // 2)
         positions.append((x, y))
 
     return positions
